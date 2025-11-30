@@ -1,0 +1,15 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: rke2-ingress-nginx
+  namespace: kube-system
+spec:
+  failurePolicy: reinstall
+  valuesContent: |
+    controller:
+      service:
+        enabled: true
+        type: LoadBalancer
+        externalTrafficPolicy: Cluster
+      publishService:
+        enabled: true

@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jellyfin
+  namespace: media
+  labels:
+    app: jellyfin
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # CRITICAL for SQLite/RWO volumes
+  selector:
+    matchLabels:
+      app: jellyfin
+  template:
+    metadata:
+      labels:
+        app: jellyfin
+    spec:
+      containers:
+        - name: jellyfin
+          image: jellyfin/jellyfin:10.11.3
+          env:
+            - name: JELLYFIN_PublishedServerUrl
+              value: "https://ghostlabz.net" # Helps with autodiscovery
+          ports:
+            - containerPort: 8096
+          volumeMounts:
+            - name: jellyfin-config
+              mountPath: /config
+            - name: jellyfin-media
+              mountPath: /media
+            - name: jellyfin-cache
+              mountPath: /cache
+          resources:
+            requests:
+              memory: "16Gi"
+              cpu: "12000m"
+      volumes:
+        - name: jellyfin-config
+          persistentVolumeClaim:
+            claimName: jellyfin-config
+        - name: jellyfin-media
+          persistentVolumeClaim:
+            claimName: media-nfs-pvc
+        - name: jellyfin-cache
+          emptyDir: {} # Keeps cache fast and local, prevents Longhorn replication churn

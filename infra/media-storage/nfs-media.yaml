@@ -1,0 +1,41 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-media
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: media-nfs-pv
+spec:
+  capacity:
+    storage: 100Ti # Arbitrary number for NFS, doesn't enforce limits
+  accessModes:
+    - ReadWriteMany # Critical: Allows Sonarr/Jellyfin to share this simultaneously
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs-media
+  mountOptions:
+    - hard
+    - nfsvers=4.1 # Safer default than 4.2. If this fails, try removing this line.
+    - rsize=1048576 # Boosted for 10Gbps/Media streaming (1MB blocks)
+    - wsize=1048576
+    - timeo=600
+  nfs:
+    server: 10.10.20.10
+    path: /mnt/user/data/media
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: media-nfs-pvc
+  namespace: media
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-media
+  resources:
+    requests:
+      storage: 100Ti
+  volumeName: media-nfs-pv
