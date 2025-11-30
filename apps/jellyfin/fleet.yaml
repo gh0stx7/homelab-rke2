@@ -1,0 +1,3 @@
+defaultNamespace: media
+labels:
+  app: jellyfin

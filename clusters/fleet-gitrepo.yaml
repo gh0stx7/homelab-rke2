@@ -1,15 +1,16 @@
 apiVersion: fleet.cattle.io/v1alpha1
 kind: GitRepo
 metadata:
-  name: homelab-main
-  namespace: fleet-default
+  name: homelab-rke2
+  namespace: fleet-local
 spec:
   repo: https://github.com/gh0stx7/homelab-rke2.git
   branch: main
+  clientSecretName: fleet-repo-auth
   paths:
 #    - infra/cert-manager
 #    - infra/longhorn
-#    - apps/jellyfin
+    - apps/jellyfin
 #    - apps/jellyseerr
 #    - apps/radarr
-    - apps/sonarr
+#    - apps/sonarr
