@@ -1,0 +1,15 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ghostlabz-wildcard
+  namespace: media
+spec:
+  secretName: ghostlabz-wildcard-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  commonName: ghostlabz.net
+  dnsNames:
+    - "ghostlabz.net"
+    - "*.ghostlabz.net"
+    - "*.lab.ghostlabz.net"

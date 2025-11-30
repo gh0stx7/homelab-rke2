@@ -15,7 +15,7 @@ spec:
   tls:
     - hosts:
         - ghostlabz.net
-      secretName: jellyfin-tls
+      secretName: ghostlabz-wildcard-tls
   ingressClassName: nginx
   rules:
     - host: ghostlabz.net

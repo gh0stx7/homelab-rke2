@@ -10,7 +10,7 @@ spec:
   tls:
     - hosts:
         - sonarr.lab.ghostlabz.net
-      secretName: sonarr-tls-cert
+      secretName: ghostlabz-wildcard-tls
   rules:
     - host: sonarr.lab.ghostlabz.net
       http:
