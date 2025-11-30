@@ -1,3 +1,5 @@
 defaultNamespace: media
 labels:
   app: jellyfin
+helm:
+  takeOwnership: true
