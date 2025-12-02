@@ -8,15 +8,63 @@ data:
     HOT="/media/hot"
     COLD="/media/cold"
     DAYS=14
-    echo "Starting Mover: Moving files older than $DAYS days from $HOT to $COLD..."
-    while true; do
-      find "$HOT" -type f -mtime +$DAYS -not -type l | while read FILE; do
-        DEST="${FILE/$HOT/$COLD}"
-        mkdir -p "$(dirname "$DEST")"
-        mv "$FILE" "$DEST" && ln -s "$DEST" "$FILE" && echo "Moved: $FILE"
+    
+    # --- PHASE 1: HYDRATION (Startup Only) ---
+    # Scans the NAS (Cold) and creates symlinks on NVMe (Hot) for any missing content.
+    echo "[Mover] Starting Hydration: Backfilling links from Cold to Hot..."
+    
+    if [ -d "$COLD" ]; then
+      cd "$COLD" || exit 1
+    
+      # A. Mirror Folder Structure (Fast)
+      # Creates all matching directories on Hot if they don't exist
+      find . -type d -print0 | xargs -0 -I {} mkdir -p "$HOT/{}"
+    
+      # B. Create Symlinks (Safe)
+      # Only creates a link if the file DOES NOT exist on Hot (real or link)
+      find . -type f -not -name ".*" | while read -r FILE; do
+         HOT_PATH="$HOT/$FILE"
+         COLD_PATH="$COLD/$FILE"
+    
+         if [ ! -e "$HOT_PATH" ] && [ ! -L "$HOT_PATH" ]; then
+            ln -s "$COLD_PATH" "$HOT_PATH"
+            # echo "[Hydrate] Linked: $FILE" # Uncomment for verbose logs
+         fi
       done
+      echo "[Mover] Hydration Complete. Hot drive matches Cold drive."
+    else
+      echo "[Mover] WARNING: Cold storage not found at $COLD. Skipping hydration."
+    fi
+
+    # --- PHASE 2: ARCHIVER (Infinite Loop) ---
+    # Moves old files from NVMe (Hot) to NAS (Cold) and leaves a link behind.
+    echo "[Mover] Starting Archiver Loop (Age: >$DAYS days)..."
+    
+    while true; do
+      # Find files on HOT that are older than X days and are NOT symlinks
+      find "$HOT" -type f -mtime +$DAYS -not -type l | while read FILE; do
+    
+        # Calculate destination path
+        DEST="${FILE/$HOT/$COLD}"
+        DEST_DIR="$(dirname "$DEST")"
+    
+        # Ensure destination folder exists on NAS
+        mkdir -p "$DEST_DIR"
+    
+        # Move file and create back-link
+        # We use 'mv' to ensure atomic data safety before linking
+        if mv "$FILE" "$DEST"; then
+            ln -s "$DEST" "$FILE"
+            echo "[Archive] Moved & Linked: $FILE"
+        else
+            echo "[Archive] ERROR moving $FILE"
+        fi
+      done
+    
+      # Sleep for 1 hour before next scan
       sleep 3600
     done
+
 ---
 apiVersion: apps/v1
 kind: Deployment
