@@ -63,3 +63,9 @@ spec:
           - path: /
             pathType: Prefix
             backend: { service: { name: profilarr, port: { number: 6868 } } }
+    - host: radarr.lab.ghostlabz.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: radarr, port: { number: 7878 } } }

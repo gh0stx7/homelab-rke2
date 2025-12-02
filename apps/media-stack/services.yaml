@@ -50,3 +50,16 @@ metadata: { name: profilarr }
 spec:
   selector: { app: profilarr }
   ports: [{ port: 6868, targetPort: 6868 }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: radarr
+  namespace: media
+spec:
+  selector:
+    app: radarr
+  ports:
+    - name: http
+      port: 7878
+      targetPort: 7878

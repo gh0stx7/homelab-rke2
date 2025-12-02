@@ -1,0 +1,57 @@
+# --- Config Storage ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: radarr-config
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: harvester
+  resources: { requests: { storage: 10Gi } }
+---
+# --- Deployment (Pinned) ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: radarr
+  labels: { app: radarr }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector:
+    matchLabels: { app: radarr }
+  template:
+    metadata:
+      labels: { app: radarr }
+    spec:
+      # --- STICKY AFFINITY ---
+      # Forces Radarr to run on the same node as SABnzbd
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: stack
+                    operator: In
+                    values: ["media-anchor"]
+              topologyKey: "kubernetes.io/hostname"
+      # -----------------------
+      containers:
+        - name: radarr
+          image: lscr.io/linuxserver/radarr:latest
+          env:
+            - { name: PUID, value: "1000" }
+            - { name: PGID, value: "1000" }
+            - { name: TZ, value: "America/New_York" }
+          ports:
+            - { containerPort: 7878, name: http }
+          volumeMounts:
+            - { name: config, mountPath: /config }
+            - { name: hot, mountPath: /media/hot }
+            - { name: cold, mountPath: /media/cold }
+      volumes:
+        - name: config
+          persistentVolumeClaim: { claimName: radarr-config }
+        - name: hot
+          persistentVolumeClaim: { claimName: media-hot-pvc }
+        - name: cold
+          persistentVolumeClaim: { claimName: media-nfs-pvc }
