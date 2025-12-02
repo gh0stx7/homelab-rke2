@@ -30,11 +30,13 @@ metadata:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
     nginx.ingress.kubernetes.io/proxy-body-size: "0"
 spec:
-  ingressClassName: nginx-internal # <--- Private Nginx (10.10.30.75)
+  ingressClassName: nginx-internal
   tls:
     - hosts:
         - sonarr.lab.ghostlabz.net
         - sabnzbd.lab.ghostlabz.net
+        - prowlarr.lab.ghostlabz.net
+        - profilarr.lab.ghostlabz.net
       secretName: ghostlabz-wildcard-tls
   rules:
     - host: sonarr.lab.ghostlabz.net
@@ -55,3 +57,9 @@ spec:
           - path: /
             pathType: Prefix
             backend: { service: { name: prowlarr, port: { number: 9696 } } }
+    - host: profilarr.lab.ghostlabz.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: profilarr, port: { number: 6868 } } }

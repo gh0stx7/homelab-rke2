@@ -16,20 +16,18 @@ data:
   99-setup-stack.sh: |
     #!/bin/bash
     CONFIG="/config/sabnzbd.ini"
-    HOSTNAME="sabnzbd.lab.ghostlabz.net"
+    # Whitelist both the public URL and the internal K8s service name
+    HOSTNAMES="sabnzbd.lab.ghostlabz.net, sabnzbd, sabnzbd.media"
     
     echo "[custom-init] Starting Media Stack Bootstrap..."
 
-    # 1. Ensure Folder Structure Exists (The IaC Fix)
-    # We create these on the 'Hot' drive so Sonarr/Radarr have valid targets
+    # 1. Ensure Folder Structure Exists
     if [ -d "/media/hot" ]; then
         echo "[custom-init] Creating directory structure on Hot Storage..."
         mkdir -p /media/hot/downloads/incomplete
         mkdir -p /media/hot/downloads/completed
         mkdir -p /media/hot/movies
         mkdir -p /media/hot/tv
-    
-        # Optional: Set permissions so all apps can write (777 is safe for internal shared volumes)
         chmod -R 777 /media/hot/downloads
         chmod -R 777 /media/hot/movies
         chmod -R 777 /media/hot/tv
@@ -37,12 +35,13 @@ data:
 
     # 2. Patch Host Whitelist
     if [ -f "$CONFIG" ]; then
-      if ! grep -q "$HOSTNAME" "$CONFIG"; then
+      # We assume if the external domain is missing, we need to patch everything
+      if ! grep -q "ghostlabz.net" "$CONFIG"; then
         echo "[custom-init] Patching Hostname Whitelist..."
-        sed -i "/^host_whitelist/ s/$/ , $HOSTNAME/" "$CONFIG"
+        # Appends the new hostnames to the existing line
+        sed -i "/^host_whitelist/ s/$/ , $HOSTNAMES/" "$CONFIG"
       fi
     fi
-    
     echo "[custom-init] Bootstrap Complete."
 ---
 apiVersion: apps/v1

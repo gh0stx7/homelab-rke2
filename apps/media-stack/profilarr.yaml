@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: profilarr-config
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: harvester
+  resources: { requests: { storage: 1Gi } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: profilarr
+  labels: { app: profilarr }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector:
+    matchLabels: { app: profilarr }
+  template:
+    metadata:
+      labels: { app: profilarr }
+    spec:
+      containers:
+        - name: profilarr
+          image: santiagosayshey/profilarr:latest
+          env:
+            - { name: TZ, value: "America/New_York" }
+          ports:
+            - { containerPort: 6868, name: http }
+          volumeMounts:
+            - { name: config, mountPath: /config }
+      volumes:
+        - name: config
+          persistentVolumeClaim: { claimName: profilarr-config }
