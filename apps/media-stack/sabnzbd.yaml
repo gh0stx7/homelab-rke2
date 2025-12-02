@@ -80,6 +80,10 @@ spec:
             - { name: hot, mountPath: /media/hot }
             - { name: cold, mountPath: /media/cold }
       volumes:
+        - name: init-script
+          configMap:
+            name: sabnzbd-init-script
+            defaultMode: 0755
         - name: config
           persistentVolumeClaim: { claimName: sabnzbd-config }
         - name: hot
