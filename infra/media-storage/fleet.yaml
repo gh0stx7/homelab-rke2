@@ -1,0 +1,4 @@
+defaultNamespace: media
+labels:
+  role: storage
+  name: media-storage

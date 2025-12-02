@@ -1,0 +1,51 @@
+# --- EXTERNAL (Jellyfin) ---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: media-external
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+spec:
+  ingressClassName: nginx # <--- Public Nginx
+  tls:
+    - hosts:
+        - ghostlabz.net
+      secretName: ghostlabz-wildcard-tls
+  rules:
+    - host: ghostlabz.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: jellyfin, port: { number: 8096 } } }
+
+---
+# --- INTERNAL (SABnzbd / Sonarr / Radarr) ---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: media-internal
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+spec:
+  ingressClassName: nginx-internal # <--- Private Nginx (10.10.30.75)
+  tls:
+    - hosts:
+        - sonarr.lab.ghostlabz.net
+        - sabnzbd.lab.ghostlabz.net
+      secretName: ghostlabz-wildcard-tls
+  rules:
+    - host: sonarr.lab.ghostlabz.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: sonarr, port: { number: 8989 } } }
+    - host: sabnzbd.lab.ghostlabz.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: sabnzbd, port: { number: 8080 } } }

@@ -1,0 +1,25 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: longhorn-fast
+provisioner: driver.harvesterhci.io # <--- Changed to Harvester CSI
+parameters:
+  # CRITICAL: This name must match a StorageClass inside Harvester itself.
+  # In Harvester, create a class named 'harvester-nvme-hot' with Replica: 1
+  hostStorageClass: harvester-nvme-hot
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: media-hot-pvc
+  namespace: media
+spec:
+  accessModes:
+    - ReadWriteOnce # Still RWO, shared via Pod Affinity
+  storageClassName: longhorn-fast
+  resources:
+    requests:
+      storage: 500Gi

@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonarr-config
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: harvester
+  resources: { requests: { storage: 10Gi } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sonarr
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector:
+    matchLabels: { app: sonarr }
+  template:
+    metadata:
+      labels: { app: sonarr }
+    spec:
+      # --- THE STICKY LOGIC ---
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: stack
+                    operator: In
+                    values: ["media-anchor"]
+              topologyKey: "kubernetes.io/hostname"
+      # ------------------------
+      containers:
+        - name: sonarr
+          image: lscr.io/linuxserver/sonarr:latest
+          env:
+            - { name: PUID, value: "1000" }
+            - { name: PGID, value: "1000" }
+            - { name: TZ, value: "America/New_York" }
+          ports:
+            - { containerPort: 8989, name: http }
+          volumeMounts:
+            - { name: config, mountPath: /config }
+            - { name: hot, mountPath: /media/hot }   # Same Path as SAB!
+            - { name: cold, mountPath: /media/cold } # Same Path as SAB!
+      volumes:
+        - name: config
+          persistentVolumeClaim: { claimName: sonarr-config }
+        - name: hot
+          persistentVolumeClaim: { claimName: media-hot-pvc }
+        - name: cold
+          persistentVolumeClaim: { claimName: media-nfs-pvc }

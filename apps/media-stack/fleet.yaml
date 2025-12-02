@@ -1,0 +1,5 @@
+defaultNamespace: media
+helm:
+  takeOwnership: true
+labels:
+  stack: media-sticky

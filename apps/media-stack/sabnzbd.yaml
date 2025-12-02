@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sabnzbd-config
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: harvester
+  resources: { requests: { storage: 10Gi } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sabnzbd
+  labels:
+    app: sabnzbd
+    stack: media-anchor # <--- THE GLUE
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector:
+    matchLabels: { app: sabnzbd }
+  template:
+    metadata:
+      labels:
+        app: sabnzbd
+        stack: media-anchor
+    spec:
+      containers:
+        - name: sabnzbd
+          image: lscr.io/linuxserver/sabnzbd:latest
+          env:
+            - { name: PUID, value: "1000" }
+            - { name: PGID, value: "1000" }
+            - { name: TZ, value: "America/New_York" }
+          ports:
+            - { containerPort: 8080, name: http }
+          volumeMounts:
+            - { name: config, mountPath: /config }
+            - { name: hot, mountPath: /media/hot }
+            - { name: cold, mountPath: /media/cold }
+      volumes:
+        - name: config
+          persistentVolumeClaim: { claimName: sabnzbd-config }
+        - name: hot
+          persistentVolumeClaim: { claimName: media-hot-pvc } # Shared RWO
+        - name: cold
+          persistentVolumeClaim: { claimName: media-nfs-pvc } # Shared RWX
