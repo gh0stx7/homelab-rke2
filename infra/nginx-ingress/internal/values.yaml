@@ -1,0 +1,16 @@
+controller:
+  # Give it a unique name so it doesn't clash with the default one
+  name: controller
+
+  ingressClassResource:
+    name: nginx-internal
+    enabled: true
+    default: false
+    controllerValue: "k8s.io/ingress-nginx-internal"
+
+  service:
+    type: LoadBalancer
+    loadBalancerIP: "10.10.30.75"
+
+  publishService:
+    enabled: true
