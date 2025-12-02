@@ -1,4 +1,4 @@
 defaultNamespace: cert-manager
 
 dependsOn:
-  - name: infra-cert-manager
+  - name: homelab-rke2-infra-cert-manager
