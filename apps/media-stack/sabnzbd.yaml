@@ -7,6 +7,44 @@ spec:
   storageClassName: harvester
   resources: { requests: { storage: 10Gi } }
 ---
+# --- Auto-Setup Script (Whitelist + Folders) ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sabnzbd-init-script
+data:
+  99-setup-stack.sh: |
+    #!/bin/bash
+    CONFIG="/config/sabnzbd.ini"
+    HOSTNAME="sabnzbd.lab.ghostlabz.net"
+    
+    echo "[custom-init] Starting Media Stack Bootstrap..."
+
+    # 1. Ensure Folder Structure Exists (The IaC Fix)
+    # We create these on the 'Hot' drive so Sonarr/Radarr have valid targets
+    if [ -d "/media/hot" ]; then
+        echo "[custom-init] Creating directory structure on Hot Storage..."
+        mkdir -p /media/hot/downloads/incomplete
+        mkdir -p /media/hot/downloads/completed
+        mkdir -p /media/hot/movies
+        mkdir -p /media/hot/tv
+    
+        # Optional: Set permissions so all apps can write (777 is safe for internal shared volumes)
+        chmod -R 777 /media/hot/downloads
+        chmod -R 777 /media/hot/movies
+        chmod -R 777 /media/hot/tv
+    fi
+
+    # 2. Patch Host Whitelist
+    if [ -f "$CONFIG" ]; then
+      if ! grep -q "$HOSTNAME" "$CONFIG"; then
+        echo "[custom-init] Patching Hostname Whitelist..."
+        sed -i "/^host_whitelist/ s/$/ , $HOSTNAME/" "$CONFIG"
+      fi
+    fi
+    
+    echo "[custom-init] Bootstrap Complete."
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -35,6 +73,9 @@ spec:
           ports:
             - { containerPort: 8080, name: http }
           volumeMounts:
+            - name: init-script
+              mountPath: /custom-cont-init.d/99-setup-stack.sh
+              subPath: 99-setup-stack.sh
             - { name: config, mountPath: /config }
             - { name: hot, mountPath: /media/hot }
             - { name: cold, mountPath: /media/cold }
