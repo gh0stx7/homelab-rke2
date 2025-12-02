@@ -1,0 +1,4 @@
+defaultNamespace: cert-manager
+
+dependsOn:
+  - name: infra-cert-manager
