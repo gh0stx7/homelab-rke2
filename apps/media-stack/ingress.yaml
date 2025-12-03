@@ -11,6 +11,7 @@ spec:
   tls:
     - hosts:
         - ghostlabz.net
+        - request.ghostlabz.net
       secretName: ghostlabz-wildcard-tls
   rules:
     - host: ghostlabz.net
@@ -43,6 +44,7 @@ spec:
         - sabnzbd.lab.ghostlabz.net
         - prowlarr.lab.ghostlabz.net
         - profilarr.lab.ghostlabz.net
+        - radarr.lab.ghostlabz.net
       secretName: ghostlabz-wildcard-tls
   rules:
     - host: sonarr.lab.ghostlabz.net
