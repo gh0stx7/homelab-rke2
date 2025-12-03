@@ -74,5 +74,5 @@ spec:
     app: jellyseerr
   ports:
     - name: http
-      port: 7878
-      targetPort: 7878
+      port: 5055
+      targetPort: 5055
