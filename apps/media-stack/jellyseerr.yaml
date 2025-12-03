@@ -27,7 +27,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: jellyseerr
-          image: fallenbagel/jellyseerr:1.9.2
+          image: fallenbagel/jellyseerr:2.7.3
           env:
             - { name: LOG_LEVEL, value: "info" }
             - { name: TZ, value: "America/New_York" }
