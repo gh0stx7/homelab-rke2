@@ -21,12 +21,15 @@ spec:
     metadata:
       labels: { app: jellyseerr }
     spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
       containers:
         - name: jellyseerr
-          image: lscr.io/linuxserver/jellyseerr:latest
+          image: fallenbagel/jellyseerr:1.9.2
           env:
-            - { name: PUID, value: "1000" }
-            - { name: PGID, value: "1000" }
+            - { name: LOG_LEVEL, value: "info" }
             - { name: TZ, value: "America/New_York" }
           ports:
             - { containerPort: 5055, name: http }
@@ -38,7 +41,7 @@ spec:
               memory: "8Gi"
               cpu: "4000m"
           volumeMounts:
-            - { name: config, mountPath: /config }
+            - { name: config, mountPath: /app/config }
       volumes:
         - name: config
           persistentVolumeClaim: { claimName: jellyseerr-config }
