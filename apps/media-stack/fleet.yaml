@@ -3,9 +3,6 @@ defaultNamespace: media
 # Media stack application suite
 # Includes Jellyfin, Sonarr, Radarr, Prowlarr, Sabnzbd, and supporting tools
 
-kustomize:
-  dir: ./
-
 labels:
   app: media-stack
   stack: media

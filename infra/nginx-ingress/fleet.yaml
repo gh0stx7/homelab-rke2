@@ -1,5 +1,0 @@
-defaultNamespace: ingress-nginx
-
-# NGINX Ingress Controllers
-# Manages both internal and external ingress controllers
-# Each controller is in its own subdirectory with specific configuration

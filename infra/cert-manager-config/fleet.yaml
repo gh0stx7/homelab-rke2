@@ -3,9 +3,6 @@ defaultNamespace: cert-manager
 # cert-manager configuration
 # ClusterIssuers and Certificate resources
 
-kustomize:
-  dir: ./
-
 labels:
   role: security
   component: cert-manager-config
