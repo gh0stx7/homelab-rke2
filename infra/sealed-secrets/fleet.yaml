@@ -1,0 +1,44 @@
+defaultNamespace: kube-system
+
+# Bitnami Sealed Secrets Controller
+# Enables safe storage of encrypted secrets in Git
+# The controller automatically decrypts SealedSecret resources into regular Secrets
+
+helm:
+  repo: https://bitnami-labs.github.io/sealed-secrets
+  chart: sealed-secrets
+  version: 2.16.2
+  releaseName: sealed-secrets-controller
+  waitForJobs: true
+
+  values:
+    # Give the controller a recognizable name
+    fullnameOverride: sealed-secrets-controller
+
+    # Resource limits appropriate for homelab environment
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+
+    # Enable metrics for monitoring (set to true if using Prometheus Operator)
+    metrics:
+      serviceMonitor:
+        enabled: false
+
+    # Security context - run as non-root user
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1001
+      fsGroup: 65534
+
+    # Controller command line arguments
+    commandArgs:
+      - "--update-status"
+
+labels:
+  role: security
+  component: sealed-secrets

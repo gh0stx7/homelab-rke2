@@ -10,8 +10,9 @@ resources:
   # Certificates
   - media-wildcard-cert.yaml
 
-  # Secrets (encrypted/sealed)
-  - cloudflare-secret.yaml
+  # Sealed Secrets (encrypted, safe for Git)
+  # Note: After sealing your actual Cloudflare token, uncomment this:
+  # - cloudflare-sealed-secret.yaml
 
 labels:
   - pairs:
