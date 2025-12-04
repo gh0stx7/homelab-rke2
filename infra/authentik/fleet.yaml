@@ -1,0 +1,14 @@
+defaultNamespace: authentik
+helm:
+  repo: https://charts.goauthentik.io
+  chart: authentik
+  version: 2025.10.2
+  releaseName: authentik
+
+  valuesFiles:
+    - values.yaml
+
+  waitForJobs: true
+
+dependsOn:
+  - name: homelab-rke2-infra-cert-manager
