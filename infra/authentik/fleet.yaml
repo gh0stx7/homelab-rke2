@@ -1,21 +1,14 @@
 defaultNamespace: authentik
-
-# Authentik - Identity Provider and SSO
-# Provides authentication and authorization services
-
 helm:
   repo: https://charts.goauthentik.io
   chart: authentik
   version: 2025.10.2
   releaseName: authentik
-  waitForJobs: true
 
   valuesFiles:
     - values.yaml
 
-labels:
-  role: security
-  component: identity-provider
+  waitForJobs: true
 
 dependsOn:
-  - name: homelab-rke2-infra-cert-manager-config
+  - name: homelab-rke2-infra-cert-manager

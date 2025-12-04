@@ -1,0 +1,182 @@
+authentik:
+
+  secret_key: "REPLACE_WITH_GENERATED_SECRET_KEY_60_CHARS"
+
+  error_reporting:
+    enabled: true
+
+  log_level: info
+
+  postgresql:
+    password: "REPLACE_WITH_GENERATED_DB_PASSWORD_60_CHARS"
+
+  # Email configuration (HIGHLY RECOMMENDED for password resets)
+  # Uncomment and configure with your SMTP details
+  # email:
+  #   host: smtp.gmail.com
+  #   port: 587
+  #   username: your-email@gmail.com
+  #   password: your-app-password  # Use app-specific password
+  #   use_tls: true
+  #   use_ssl: false
+  #   timeout: 30
+  #   from: authentik@ghostlabz.net
+
+server:
+  replicas: 2
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+  ingress:
+    enabled: true
+    ingressClassName: nginx  # External nginx for internet-facing
+
+    # Hosts - both external and internal
+    hosts:
+      - auth.ghostlabz.net      # External (internet)
+      - auth.lab.ghostlabz.net  # Internal (LAN)
+
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+      # Buffer sizes for auth headers
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "16k"
+      nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
+
+      # Rate limiting (protect against brute force)
+      nginx.ingress.kubernetes.io/limit-rps: "10"
+      nginx.ingress.kubernetes.io/limit-connections: "5"
+      nginx.ingress.kubernetes.io/limit-burst-multiplier: "3"
+
+      # Security headers
+      nginx.ingress.kubernetes.io/enable-cors: "false"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+
+    # TLS configuration
+    tls:
+      - secretName: authentik-external-tls
+        hosts:
+          - auth.ghostlabz.net
+      - secretName: authentik-internal-tls
+        hosts:
+          - auth.lab.ghostlabz.net
+
+worker:
+  replicas: 1
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# =============================================================================
+# POSTGRESQL (BUNDLED) - Using longhorn-v2
+# =============================================================================
+# Why longhorn-v2 with 2 replicas?
+# - Authentik user database is CRITICAL (passwords, MFA secrets, sessions)
+# - longhorn-v2 offers better performance than v1
+# - 2 replicas provides HA without 3x space overhead (recommended by Longhorn docs)
+# - Harvester's v2 implementation is production-ready as of v1.6.1
+postgresql:
+  enabled: true
+
+  auth:
+    password: "REPLACE_WITH_GENERATED_DB_PASSWORD_60_CHARS"
+    database: authentik
+    username: authentik
+
+  # Persistent storage - CRITICAL DATA
+  primary:
+    persistence:
+      enabled: true
+      storageClass: longhorn-v2  # Using your existing longhorn-v2 class
+      size: 10Gi
+      accessModes:
+        - ReadWriteOnce
+
+    # Resource allocation
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+
+    # PostgreSQL tuning for authentication workload
+    extraEnvVars:
+      - name: POSTGRESQL_MAX_CONNECTIONS
+        value: "200"
+      - name: POSTGRESQL_SHARED_BUFFERS
+        value: "128MB"
+      - name: POSTGRESQL_EFFECTIVE_CACHE_SIZE
+        value: "512MB"
+
+# =============================================================================
+# REDIS (BUNDLED) - Using standard harvester (3 replicas)
+# =============================================================================
+# Why harvester (default 3 replicas)?
+# - Redis stores sessions and cache (ephemeral data)
+# - Small footprint (~2GB total with 3 replicas = 6GB)
+# - Fast rebuild if node fails
+# - Acceptable to use default HA storage for peace of mind
+# - If space is tight, can switch to longhorn-v2 with 2 replicas
+redis:
+  enabled: true
+
+  architecture: standalone  # Single master (not sentinel/cluster)
+
+  auth:
+    enabled: false  # Authentik handles auth, Redis is internal-only
+
+  master:
+    persistence:
+      enabled: true
+      storageClass: harvester  # Default 3-replica storage
+      size: 2Gi
+      accessModes:
+        - ReadWriteOnce
+
+    # Resource allocation
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+    # Redis configuration for session storage
+    configuration: |-
+      maxmemory 256mb
+      maxmemory-policy allkeys-lru
+      save 900 1
+      save 300 10
+      save 60 10000
+
+# =============================================================================
+# GLOBAL SETTINGS
+# =============================================================================
+global:
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+
+  # Prometheus monitoring (optional)
+  addPrometheusAnnotations: false
+
+  # Pod disruption budget (optional - enable after initial deployment)
+  # podDisruptionBudget:
+  #   enabled: true
+  #   minAvailable: 1

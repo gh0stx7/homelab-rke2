@@ -2,10 +2,8 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: longhorn-fast
-provisioner: driver.harvesterhci.io # <--- Changed to Harvester CSI
+provisioner: driver.harvesterhci.io
 parameters:
-  # CRITICAL: This name must match a StorageClass inside Harvester itself.
-  # In Harvester, create a class named 'harvester-nvme-hot' with Replica: 1
   hostStorageClass: harvester-nvme-hot
 allowVolumeExpansion: true
 reclaimPolicy: Delete
