@@ -5,26 +5,26 @@ namespace: media
 
 resources:
   # Shared base resources
-  - base/services.yaml
-  - base/ingress.yaml
+  - ./base/services.yaml
+  - ./base/ingress.yaml
 
   # Media server components
-  - components/jellyfin/jellyfin.yaml
-  - components/jellyseerr/jellyseerr.yaml
+  - ./components/jellyfin/jellyfin.yaml
+  - ./components/jellyseerr/jellyseerr.yaml
 
   # Download clients
-  - components/sabnzbd/sabnzbd.yaml
+  - ./components/sabnzbd/sabnzbd.yaml
 
   # Media management (PVR)
-  - components/sonarr/sonarr.yaml
-  - components/radarr/radarr.yaml
+  - ./components/sonarr/sonarr.yaml
+  - ./components/radarr/radarr.yaml
 
   # Indexers and automation
-  - components/prowlarr/prowlarr.yaml
-  - components/profilarr/profilarr.yaml
+  - ./components/prowlarr/prowlarr.yaml
+  - ./components/profilarr/profilarr.yaml
 
   # Storage management
-  - components/mover/mover.yaml
+  - ./components/mover/mover.yaml
 
 labels:
   - pairs:
