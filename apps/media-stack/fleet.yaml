@@ -1,5 +1,15 @@
 defaultNamespace: media
-helm:
-  takeOwnership: true
+
+# Media stack application suite
+# Includes Jellyfin, Sonarr, Radarr, Prowlarr, Sabnzbd, and supporting tools
+
+kustomize:
+  dir: ./
+
 labels:
-  stack: media-sticky
+  app: media-stack
+  stack: media
+
+dependsOn:
+  - name: homelab-rke2-infra-media-storage
+  - name: homelab-rke2-infra-cert-manager-config

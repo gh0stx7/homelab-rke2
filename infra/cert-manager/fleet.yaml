@@ -1,12 +1,21 @@
 defaultNamespace: cert-manager
+
+# cert-manager - TLS certificate management
+# Provides automated certificate provisioning and renewal
+
 helm:
   repo: https://charts.jetstack.io
   chart: cert-manager
   version: v1.15.3
   releaseName: cert-manager
+  waitForJobs: true
 
   values:
     installCRDs: true
     extraArgs:
       - --dns01-recursive-nameservers=1.1.1.1:53,8.8.8.8:53
       - --dns01-recursive-nameservers-only
+
+labels:
+  role: security
+  component: cert-manager

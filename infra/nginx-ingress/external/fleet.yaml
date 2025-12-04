@@ -1,1 +1,4 @@
 defaultNamespace: kube-system
+
+# RKE2 built-in NGINX Ingress Controller configuration
+# Modifies the existing RKE2 nginx-ingress with LoadBalancer

@@ -1,4 +1,8 @@
 defaultNamespace: media
+
+# Media Storage Configuration
+# PVCs and storage resources for media applications
+
 labels:
   role: storage
-  name: media-storage
+  component: media-storage

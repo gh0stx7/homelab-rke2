@@ -1,5 +1,42 @@
+# Node.js (if using any tooling)
 node_modules/
-.env
-.DS_Store
 dist/
-.idea
+
+# IDE and Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Secrets and credentials (IMPORTANT)
+secrets/
+*.secret.yaml
+*-secrets.yaml
+.env
+.env.*
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+.temp/
+
+# Helm
+charts/
+*.tgz
+
+# Kustomize
+.kustomize/
+
+# Fleet
+.fleet/
+
+# Kubernetes local configs
+kubeconfig
+*.kubeconfig
+
+# Test and debug
+test-*.yaml
+debug-*.yaml
