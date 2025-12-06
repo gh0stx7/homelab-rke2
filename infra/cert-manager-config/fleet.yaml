@@ -9,3 +9,4 @@ labels:
 
 dependsOn:
   - name: homelab-rke2-infra-cert-manager
+  - name: homelab-rke2-infra-sealed-secrets

@@ -43,7 +43,6 @@ server:
       - auth.lab.ghostlabz.net  # Internal (LAN)
 
     annotations:
-      cert-manager.io/cluster-issuer: "letsencrypt-prod"
 
       # Buffer sizes for auth headers
       nginx.ingress.kubernetes.io/proxy-buffer-size: "16k"

@@ -1,0 +1,19 @@
+# ~/git/homelab-rke2/infra/rancher/rke2-ingress-loadbalancer.yaml
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: rke2-ingress-nginx
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    controller:
+      service:
+        enabled: true
+        type: LoadBalancer
+        loadBalancerIP: "10.10.50.25"
+        annotations:
+          metallb.universe.tf/address-pool: rancher-pool
+      publishService:
+        enabled: true
+      ingressClassResource:
+        default: true
