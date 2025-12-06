@@ -14,7 +14,6 @@ spec:
         loadBalancerIP: "10.10.30.50"
         annotations:
           metallb.universe.tf/address-pool: external-pool
-          metallb.universe.tf/loadBalancerIPs: 10.10.30.50
       publishService:
         enabled: true
       config:
