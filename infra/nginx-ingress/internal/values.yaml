@@ -1,5 +1,4 @@
 controller:
-  # Give it a unique name so it doesn't clash with the default one
   name: controller
 
   ingressClassResource:
@@ -10,7 +9,15 @@ controller:
 
   service:
     type: LoadBalancer
+    externalTrafficPolicy: Local  # Preserve source IP
     loadBalancerIP: "10.10.30.75"
+    annotations:
+      metallb.universe.tf/address-pool: internal-pool
+      metallb.universe.tf/loadBalancerIPs: 10.10.30.75
 
   publishService:
     enabled: true
+
+  config:
+    use-forwarded-headers: "true"
+    enable-real-ip: "true"
