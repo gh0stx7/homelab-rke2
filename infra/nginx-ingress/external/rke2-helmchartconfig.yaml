@@ -11,9 +11,8 @@ spec:
         enabled: true
         type: LoadBalancer
         externalTrafficPolicy: Local  # Preserve source IP
-        loadBalancerIP: "10.10.30.50"
         annotations:
-          metallb.universe.tf/address-pool: external-pool
+          metallb.io/loadBalancerIPs: "10.10.30.50"
       publishService:
         enabled: true
       config:
