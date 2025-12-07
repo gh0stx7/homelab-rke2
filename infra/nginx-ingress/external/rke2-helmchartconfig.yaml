@@ -10,7 +10,7 @@ spec:
       service:
         enabled: true
         type: LoadBalancer
-        externalTrafficPolicy: Local  # Preserve source IP
+        externalTrafficPolicy: Cluster
         annotations:
           metallb.io/loadBalancerIPs: "10.10.30.50"
       publishService:
