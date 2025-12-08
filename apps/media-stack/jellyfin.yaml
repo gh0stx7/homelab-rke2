@@ -43,7 +43,7 @@ spec:
           volumeMounts:
             - { name: config, mountPath: /config }
             - { name: cache, mountPath: /cache }
-            - { name: transcodes, mountPath: /transcodes }
+            - { name: transcodes, mountPath: /cache/transcodes }
             - { name: hot, mountPath: /media/hot }
             - { name: cold, mountPath: /media/cold }
       volumes:
