@@ -16,33 +16,62 @@ data:
   99-setup-stack.sh: |
     #!/bin/bash
     CONFIG="/config/sabnzbd.ini"
-    # Whitelist both the public URL and the internal K8s service name
-    HOSTNAMES="sabnzbd.lab.ghostlabz.net, sabnzbd, sabnzbd.media"
+    HOSTNAMES="sabnzbd.lab.ghostlabz.net, sabnzbd, sabnzbd.media, sabnzbd.media.svc.cluster.local"
     
-    echo "[custom-init] Starting Media Stack Bootstrap..."
+    echo "[custom-init] Starting SABnzbd Bootstrap..."
 
-    # 1. Ensure Folder Structure Exists
+    # 1. Wait for SABnzbd to create the config file (first boot)
+    COUNTER=0
+    while [ ! -f "$CONFIG" ] && [ $COUNTER -lt 30 ]; do
+    echo "[custom-init] Waiting for SABnzbd to create config file..."
+    sleep 2
+    COUNTER=$((COUNTER + 1))
+    done
+
+    if [ ! -f "$CONFIG" ]; then
+    echo "[custom-init] ERROR: Config file not found after 60 seconds"
+    exit 0  # Don't fail the container
+    fi
+
+    # 2. Ensure Folder Structure Exists
     if [ -d "/media/hot" ]; then
-        echo "[custom-init] Creating directory structure on Hot Storage..."
-        mkdir -p /media/hot/downloads/incomplete
-        mkdir -p /media/hot/downloads/completed
-        mkdir -p /media/hot/movies
-        mkdir -p /media/hot/tv
-        chmod -R 777 /media/hot/downloads
-        chmod -R 777 /media/hot/movies
-        chmod -R 777 /media/hot/tv
+      echo "[custom-init] Creating directory structure on Hot Storage..."
+      mkdir -p /media/hot/downloads/incomplete
+      mkdir -p /media/hot/downloads/completed
+      mkdir -p /media/hot/movies
+      mkdir -p /media/hot/tv
+      chmod -R 777 /media/hot/downloads
+      chmod -R 777 /media/hot/movies
+      chmod -R 777 /media/hot/tv
     fi
 
-    # 2. Patch Host Whitelist
-    if [ -f "$CONFIG" ]; then
-      # We assume if the external domain is missing, we need to patch everything
-      if ! grep -q "ghostlabz.net" "$CONFIG"; then
-        echo "[custom-init] Patching Hostname Whitelist..."
-        # Appends the new hostnames to the existing line
-        sed -i "/^host_whitelist/ s/$/ , $HOSTNAMES/" "$CONFIG"
-      fi
+    # 3. Patch Host Whitelist
+    echo "[custom-init] Patching Hostname Whitelist..."
+    
+    # Check if host_whitelist line exists
+    if grep -q "^host_whitelist" "$CONFIG"; then
+    # Line exists - check if our hostnames are already there
+    if ! grep -q "ghostlabz.net" "$CONFIG"; then
+      echo "[custom-init] Adding hostnames to existing whitelist..."
+      # Append to existing line
+      sed -i "s/^host_whitelist = .*/& , $HOSTNAMES/" "$CONFIG"
+    else
+      echo "[custom-init] Hostnames already in whitelist, skipping..."
     fi
+    else
+    # Line doesn't exist - add it
+    echo "[custom-init] Creating new host_whitelist line..."
+    # Add under [misc] section if it exists, otherwise append to end
+    if grep -q "^\[misc\]" "$CONFIG"; then
+      sed -i "/^\[misc\]/a host_whitelist = $HOSTNAMES" "$CONFIG"
+    else
+      echo -e "\n[misc]\nhost_whitelist = $HOSTNAMES" >> "$CONFIG"
+    fi
+    fi
+    
     echo "[custom-init] Bootstrap Complete."
+    echo "[custom-init] Final host_whitelist value:"
+    grep "^host_whitelist" "$CONFIG" || echo "[custom-init] WARNING: host_whitelist not found!"
 ---
 apiVersion: apps/v1
 kind: Deployment
