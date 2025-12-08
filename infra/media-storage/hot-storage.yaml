@@ -4,7 +4,7 @@ metadata:
   name: longhorn-fast
 provisioner: driver.harvesterhci.io
 parameters:
-  hostStorageClass: harvester-longhorn-v2
+  hostStorageClass: harvester-longhorn-2r
 allowVolumeExpansion: true
 reclaimPolicy: Delete
 volumeBindingMode: Immediate
