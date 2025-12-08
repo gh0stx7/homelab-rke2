@@ -168,6 +168,15 @@ spec:
     metadata:
       labels: { app: media-mover }
     spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: stack
+                    operator: In
+                    values: [ "media-anchor" ]
+              topologyKey: "kubernetes.io/hostname"
       containers:
         - name: mover
           image: alpine:latest

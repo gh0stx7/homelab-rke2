@@ -50,6 +50,7 @@ metadata:
   name: sabnzbd
   labels:
     app: sabnzbd
+    stack: media-anchor
 spec:
   replicas: 1
   strategy: { type: Recreate }
@@ -59,6 +60,7 @@ spec:
     metadata:
       labels:
         app: sabnzbd
+        stack: media-anchor
     spec:
       containers:
         - name: sabnzbd

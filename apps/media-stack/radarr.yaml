@@ -23,6 +23,15 @@ spec:
     metadata:
       labels: { app: radarr }
     spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: stack
+                    operator: In
+                    values: [ "media-anchor" ]
+              topologyKey: "kubernetes.io/hostname"
       containers:
         - name: radarr
           image: lscr.io/linuxserver/radarr:latest
