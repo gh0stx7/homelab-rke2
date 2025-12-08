@@ -7,6 +7,8 @@ controller:
     default: false
     controllerValue: "k8s.io/ingress-nginx-internal"
 
+  ingressClass: nginx-internal
+
   service:
     type: LoadBalancer
     externalTrafficPolicy: Cluster
