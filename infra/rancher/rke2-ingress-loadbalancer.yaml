@@ -13,7 +13,6 @@ spec:
         loadBalancerIP: "10.10.50.25"
         annotations:
           metallb.universe.tf/address-pool: rancher-pool
-          cloudprovider.harvesterhci.io/ipam: pool
       publishService:
         enabled: true
       ingressClassResource:

@@ -12,9 +12,8 @@ spec:
         type: LoadBalancer
         externalTrafficPolicy: Cluster
         annotations:
-          metallb.io/loadBalancerIPs: "10.10.30.50"
+          metallb.io/address-pool: external-pool
       publishService:
         enabled: true
-      config:
-        use-forwarded-headers: "true"
-        enable-real-ip: "true"
+      ingressClassResource:
+        default: true

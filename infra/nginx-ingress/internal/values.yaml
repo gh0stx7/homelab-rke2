@@ -11,12 +11,7 @@ controller:
     type: LoadBalancer
     externalTrafficPolicy: Cluster
     annotations:
-      cloudprovider.harvesterhci.io/ipam: pool
-      metallb.io/loadBalancerIPs: "10.10.30.75"
+      metallb.io/address-pool: internal-pool
 
   publishService:
     enabled: true
-
-  config:
-    use-forwarded-headers: "true"
-    enable-real-ip: "true"
