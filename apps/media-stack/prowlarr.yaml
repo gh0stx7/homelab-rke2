@@ -4,7 +4,7 @@ metadata:
   name: prowlarr-config
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: harvester
+  storageClassName: longhorn-fast
   resources: { requests: { storage: 5Gi } }
 ---
 apiVersion: apps/v1
@@ -32,6 +32,10 @@ spec:
             - { containerPort: 9696, name: http }
           volumeMounts:
             - { name: config, mountPath: /config }
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
       volumes:
         - name: config
           persistentVolumeClaim: { claimName: prowlarr-config }

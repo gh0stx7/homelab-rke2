@@ -4,7 +4,7 @@ metadata:
   name: profilarr-config
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: harvester
+  storageClassName: longhorn-fast
   resources: { requests: { storage: 1Gi } }
 ---
 apiVersion: apps/v1
@@ -30,6 +30,10 @@ spec:
             - { containerPort: 6868, name: http }
           volumeMounts:
             - { name: config, mountPath: /config }
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
       volumes:
         - name: config
           persistentVolumeClaim: { claimName: profilarr-config }

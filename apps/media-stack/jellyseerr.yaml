@@ -4,7 +4,7 @@ metadata:
   name: jellyseerr-config
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: harvester
+  storageClassName: longhorn-fast
   resources: { requests: { storage: 5Gi } }
 ---
 apiVersion: apps/v1
@@ -37,9 +37,6 @@ spec:
             requests:
               memory: "2Gi"
               cpu: "1000m"
-            limits:
-              memory: "8Gi"
-              cpu: "4000m"
           volumeMounts:
             - { name: config, mountPath: /app/config }
       volumes:

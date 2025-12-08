@@ -5,7 +5,7 @@ metadata:
   name: radarr-config
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: harvester
+  storageClassName: longhorn-fast
   resources: { requests: { storage: 10Gi } }
 ---
 # --- Deployment (Pinned) ---
@@ -23,18 +23,6 @@ spec:
     metadata:
       labels: { app: radarr }
     spec:
-      # --- STICKY AFFINITY ---
-      # Forces Radarr to run on the same node as SABnzbd
-      affinity:
-        podAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: stack
-                    operator: In
-                    values: ["media-anchor"]
-              topologyKey: "kubernetes.io/hostname"
-      # -----------------------
       containers:
         - name: radarr
           image: lscr.io/linuxserver/radarr:latest
@@ -48,6 +36,10 @@ spec:
             - { name: config, mountPath: /config }
             - { name: hot, mountPath: /media/hot }
             - { name: cold, mountPath: /media/cold }
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
       volumes:
         - name: config
           persistentVolumeClaim: { claimName: radarr-config }

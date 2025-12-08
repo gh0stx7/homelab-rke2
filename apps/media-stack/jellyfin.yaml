@@ -4,7 +4,7 @@ metadata:
   name: jellyfin-config
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: harvester
+  storageClassName: longhorn-fast
   resources: { requests: { storage: 20Gi } }
 ---
 apiVersion: apps/v1
@@ -20,17 +20,6 @@ spec:
     metadata:
       labels: { app: jellyfin }
     spec:
-      # --- THE STICKY LOGIC ---
-      affinity:
-        podAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: stack
-                    operator: In
-                    values: ["media-anchor"]
-              topologyKey: "kubernetes.io/hostname"
-      # ------------------------
       containers:
         - name: jellyfin
           image: jellyfin/jellyfin:10.11.3
@@ -39,17 +28,25 @@ spec:
           ports:
             - { containerPort: 8096, name: http }
           resources:
-            requests: { memory: "4Gi", cpu: "2000m" }
+            requests:
+              memory: "8Gi"
+              cpu: "4000m"
           volumeMounts:
             - { name: config, mountPath: /config }
             - { name: cache, mountPath: /cache }
+            - { name: transcodes, mountPath: /transcodes }
             - { name: hot, mountPath: /media/hot }
             - { name: cold, mountPath: /media/cold }
       volumes:
         - name: config
           persistentVolumeClaim: { claimName: jellyfin-config }
         - name: cache
-          emptyDir: {}
+          emptyDir:
+            sizeLimit: 50Gi
+        - name: transcodes
+          emptyDir:
+            medium: Memory
+            sizeLimit: 60Gi
         - name: hot
           persistentVolumeClaim: { claimName: media-hot-pvc }
         - name: cold

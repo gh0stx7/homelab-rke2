@@ -4,7 +4,7 @@ metadata:
   name: sabnzbd-config
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: harvester
+  storageClassName: longhorn-fast
   resources: { requests: { storage: 10Gi } }
 ---
 # --- Auto-Setup Script (Whitelist + Folders) ---
@@ -50,7 +50,6 @@ metadata:
   name: sabnzbd
   labels:
     app: sabnzbd
-    stack: media-anchor # <--- THE GLUE
 spec:
   replicas: 1
   strategy: { type: Recreate }
@@ -60,7 +59,6 @@ spec:
     metadata:
       labels:
         app: sabnzbd
-        stack: media-anchor
     spec:
       containers:
         - name: sabnzbd
@@ -78,6 +76,10 @@ spec:
             - { name: config, mountPath: /config }
             - { name: hot, mountPath: /media/hot }
             - { name: cold, mountPath: /media/cold }
+          resources:
+            requests:
+              cpu: "2000m"
+              memory: "2Gi"
       volumes:
         - name: init-script
           configMap:
