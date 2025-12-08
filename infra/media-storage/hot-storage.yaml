@@ -4,7 +4,7 @@ metadata:
   name: longhorn-fast
 provisioner: driver.harvesterhci.io
 parameters:
-  hostStorageClass: harvester-nvme-hot
+  hostStorageClass: harvester-longhorn-v2
 allowVolumeExpansion: true
 reclaimPolicy: Delete
 volumeBindingMode: Immediate
@@ -16,7 +16,7 @@ metadata:
   namespace: media
 spec:
   accessModes:
-    - ReadWriteOnce # Still RWO, shared via Pod Affinity
+    - ReadWriteMany
   storageClassName: longhorn-fast
   resources:
     requests:
