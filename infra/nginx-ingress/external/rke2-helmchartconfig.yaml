@@ -11,8 +11,7 @@ spec:
         enabled: true
         type: LoadBalancer
         externalTrafficPolicy: Cluster
-        annotations:
-          metallb.io/address-pool: external-pool
+        loadBalancerIP: "10.10.30.50"
       publishService:
         enabled: true
       ingressClassResource:

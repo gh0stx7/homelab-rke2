@@ -10,8 +10,7 @@ controller:
   service:
     type: LoadBalancer
     externalTrafficPolicy: Cluster
-    annotations:
-      metallb.io/address-pool: internal-pool
+    loadBalancerIP: "10.10.30.75"
 
   publishService:
     enabled: true
