@@ -11,6 +11,9 @@ controller:
     type: LoadBalancer
     externalTrafficPolicy: Cluster
     loadBalancerIP: "10.10.30.75"
+    annotations:
+      cloudprovider.harvesterhci.io/ipam: pool
+      cloudprovider.harvesterhci.io/ippool: global-ip-pool
 
   publishService:
     enabled: true
