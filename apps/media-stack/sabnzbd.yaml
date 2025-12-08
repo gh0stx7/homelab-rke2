@@ -4,7 +4,7 @@ metadata:
   name: sabnzbd-config
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: longhorn-fast
+  storageClassName: longhorn-2r
   resources: { requests: { storage: 10Gi } }
 ---
 # --- Auto-Setup Script (Whitelist + Folders) ---

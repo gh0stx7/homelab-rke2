@@ -1,7 +1,18 @@
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: longhorn-fast
+  name: longhorn-rwx
+provisioner: driver.harvesterhci.io
+parameters:
+  hostStorageClass: harvester-longhorn-rwx
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: longhorn-2r
 provisioner: driver.harvesterhci.io
 parameters:
   hostStorageClass: harvester-longhorn-2r
@@ -17,7 +28,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteMany
-  storageClassName: longhorn-fast
+  storageClassName: longhorn-rwx
   resources:
     requests:
       storage: 500Gi

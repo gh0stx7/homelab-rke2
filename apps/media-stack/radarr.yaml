@@ -5,7 +5,7 @@ metadata:
   name: radarr-config
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: longhorn-fast
+  storageClassName: longhorn-2r
   resources: { requests: { storage: 10Gi } }
 ---
 # --- Deployment (Pinned) ---

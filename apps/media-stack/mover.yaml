@@ -122,8 +122,7 @@ data:
           # Ensure destination folder exists
           mkdir -p "$DEST_DIR"
     
-          # Get file size (try macOS stat, then Linux stat)
-          FILE_SIZE=$(stat -f%z "$FILE_PATH" 2>/dev/null || stat -c%s "$FILE_PATH" 2>/dev/null || echo "0")
+          FILE_SIZE=$(stat -c%s "$FILE_PATH" 2>/dev/null || echo "0")
     
           # Calculate age in days for logging
           AGE_DAYS=$(( ($(date +%s) - MTIME_INT) / 86400 ))
