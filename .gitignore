@@ -12,8 +12,6 @@ dist/
 
 # Secrets and credentials (IMPORTANT)
 secrets/
-*.secret.yaml
-*-secrets.yaml
 .env
 .env.*
 
