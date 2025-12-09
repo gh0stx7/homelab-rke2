@@ -1,0 +1,70 @@
+---
+# External Ingress - Internet-facing traffic
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: authentik-external
+  namespace: authentik
+  annotations:
+    # Buffer sizes for auth headers
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "16k"
+    nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
+
+    # Rate limiting (protect against brute force)
+    nginx.ingress.kubernetes.io/limit-rps: "10"
+    nginx.ingress.kubernetes.io/limit-connections: "5"
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "3"
+
+    # Security headers
+    nginx.ingress.kubernetes.io/enable-cors: "false"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  ingressClassName: nginx  # External nginx controller
+  tls:
+    - secretName: ghostlabz-wildcard-tls
+      hosts:
+        - auth.ghostlabz.net
+  rules:
+    - host: auth.ghostlabz.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: authentik-server
+                port:
+                  number: 80
+
+---
+# Internal Ingress - LAN traffic
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: authentik-internal
+  namespace: authentik
+  annotations:
+    # Buffer sizes for auth headers
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "16k"
+    nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
+
+    # Security headers (less strict rate limiting for internal)
+    nginx.ingress.kubernetes.io/enable-cors: "false"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  ingressClassName: nginx-internal  # Internal nginx controller
+  tls:
+    - secretName: ghostlabz-wildcard-tls
+      hosts:
+        - auth.lab.ghostlabz.net
+  rules:
+    - host: auth.lab.ghostlabz.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: authentik-server
+                port:
+                  number: 80

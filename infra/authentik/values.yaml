@@ -1,6 +1,6 @@
 authentik:
-
-  secret_key: "REPLACE_WITH_GENERATED_SECRET_KEY_60_CHARS"
+  # Secrets are injected via environment variables below
+  secret_key: ""
 
   error_reporting:
     enabled: true
@@ -8,19 +8,36 @@ authentik:
   log_level: info
 
   postgresql:
-    password: "REPLACE_WITH_GENERATED_DB_PASSWORD_60_CHARS"
+    password: ""  # Injected via env var
 
-  # Email configuration (HIGHLY RECOMMENDED for password resets)
-  # Uncomment and configure with your SMTP details
-  # email:
-  #   host: smtp.gmail.com
-  #   port: 587
-  #   username: your-email@gmail.com
-  #   password: your-app-password  # Use app-specific password
-  #   use_tls: true
-  #   use_ssl: false
-  #   timeout: 30
-  #   from: authentik@ghostlabz.net
+  # Email configuration
+  email:
+    host: smtp.gmail.com
+    port: 587
+    username: bertlongarms@gmail.com
+    password: ""  # Injected via env var
+    use_tls: true
+    use_ssl: false
+    timeout: 30
+    from: authentik@ghostlabz.net
+
+  # Environment variables to inject secrets
+  env:
+    - name: AUTHENTIK_SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: authentik-secrets
+          key: secret-key
+    - name: AUTHENTIK_POSTGRESQL__PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: authentik-secrets
+          key: db-password
+    - name: AUTHENTIK_EMAIL__PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: authentik-secrets
+          key: email-password
 
 server:
   replicas: 2
@@ -33,38 +50,9 @@ server:
       cpu: 2000m
       memory: 2Gi
 
+  # Disable built-in ingress - we'll create separate ingresses for external/internal
   ingress:
-    enabled: true
-    ingressClassName: nginx  # External nginx for internet-facing
-
-    # Hosts - both external and internal
-    hosts:
-      - auth.ghostlabz.net      # External (internet)
-      - auth.lab.ghostlabz.net  # Internal (LAN)
-
-    annotations:
-
-      # Buffer sizes for auth headers
-      nginx.ingress.kubernetes.io/proxy-buffer-size: "16k"
-      nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
-
-      # Rate limiting (protect against brute force)
-      nginx.ingress.kubernetes.io/limit-rps: "10"
-      nginx.ingress.kubernetes.io/limit-connections: "5"
-      nginx.ingress.kubernetes.io/limit-burst-multiplier: "3"
-
-      # Security headers
-      nginx.ingress.kubernetes.io/enable-cors: "false"
-      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-
-    # TLS configuration
-    tls:
-      - secretName: authentik-external-tls
-        hosts:
-          - auth.ghostlabz.net
-      - secretName: authentik-internal-tls
-        hosts:
-          - auth.lab.ghostlabz.net
+    enabled: false
 
 worker:
   replicas: 1
@@ -78,26 +66,30 @@ worker:
       memory: 1Gi
 
 # =============================================================================
-# POSTGRESQL (BUNDLED) - Using longhorn-v2
+# POSTGRESQL (BUNDLED) - Using longhorn-2r
 # =============================================================================
-# Why longhorn-v2 with 2 replicas?
+# Why longhorn-2r with 2 replicas?
 # - Authentik user database is CRITICAL (passwords, MFA secrets, sessions)
-# - longhorn-v2 offers better performance than v1
+# - longhorn-2r offers better performance than v1
 # - 2 replicas provides HA without 3x space overhead (recommended by Longhorn docs)
 # - Harvester's v2 implementation is production-ready as of v1.6.1
 postgresql:
   enabled: true
 
   auth:
-    password: "REPLACE_WITH_GENERATED_DB_PASSWORD_60_CHARS"
-    database: authentik
     username: authentik
+    database: authentik
+    # Use existing secret created by sealed-secrets
+    existingSecret: authentik-secrets
+    secretKeys:
+      adminPasswordKey: db-password
+      userPasswordKey: db-password
 
   # Persistent storage - CRITICAL DATA
   primary:
     persistence:
       enabled: true
-      storageClass: longhorn-v2  # Using your existing longhorn-v2 class
+      storageClass: longhorn-2r
       size: 10Gi
       accessModes:
         - ReadWriteOnce
@@ -121,14 +113,13 @@ postgresql:
         value: "512MB"
 
 # =============================================================================
-# REDIS (BUNDLED) - Using standard harvester (3 replicas)
+# REDIS (BUNDLED) - Using longhorn-2r
 # =============================================================================
-# Why harvester (default 3 replicas)?
+# Why longhorn-2r (2 replicas)?
 # - Redis stores sessions and cache (ephemeral data)
-# - Small footprint (~2GB total with 3 replicas = 6GB)
+# - Small footprint (~2GB total with 2 replicas = 4GB)
 # - Fast rebuild if node fails
-# - Acceptable to use default HA storage for peace of mind
-# - If space is tight, can switch to longhorn-v2 with 2 replicas
+# - Using 2 replicas for consistency with PostgreSQL
 redis:
   enabled: true
 
@@ -140,7 +131,7 @@ redis:
   master:
     persistence:
       enabled: true
-      storageClass: harvester  # Default 3-replica storage
+      storageClass: longhorn-2r
       size: 2Gi
       accessModes:
         - ReadWriteOnce
