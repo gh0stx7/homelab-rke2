@@ -7,7 +7,6 @@ helm:
   repo: https://emberstack.github.io/helm-charts
   chart: reflector
   version: 7.1.288
-  releaseName: reflector
   waitForJobs: true
 
   values:
