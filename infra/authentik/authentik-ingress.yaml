@@ -11,9 +11,9 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
 
     # Rate limiting (protect against brute force)
-    nginx.ingress.kubernetes.io/limit-rps: "10"
-    nginx.ingress.kubernetes.io/limit-connections: "5"
-    nginx.ingress.kubernetes.io/limit-burst-multiplier: "3"
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    nginx.ingress.kubernetes.io/limit-connections: "50"
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "10"
 
     # Security headers
     nginx.ingress.kubernetes.io/enable-cors: "false"
