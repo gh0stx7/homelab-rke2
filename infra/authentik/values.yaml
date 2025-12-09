@@ -21,6 +21,21 @@ authentik:
     timeout: 30
     from: authentik@ghostlabz.net
 
+server:
+  replicas: 2
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+  # Disable built-in ingress - we'll create separate ingresses for external/internal
+  ingress:
+    enabled: false
+
   # Environment variables to inject secrets
   env:
     - name: AUTHENTIK_SECRET_KEY
@@ -39,21 +54,6 @@ authentik:
           name: authentik-secrets
           key: email-password
 
-server:
-  replicas: 2
-
-  resources:
-    requests:
-      cpu: 500m
-      memory: 512Mi
-    limits:
-      cpu: 2000m
-      memory: 2Gi
-
-  # Disable built-in ingress - we'll create separate ingresses for external/internal
-  ingress:
-    enabled: false
-
 worker:
   replicas: 1
 
@@ -64,6 +64,24 @@ worker:
     limits:
       cpu: 1000m
       memory: 1Gi
+
+  # Environment variables to inject secrets (worker needs them too)
+  env:
+    - name: AUTHENTIK_SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: authentik-secrets
+          key: secret-key
+    - name: AUTHENTIK_POSTGRESQL__PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: authentik-secrets
+          key: db-password
+    - name: AUTHENTIK_EMAIL__PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: authentik-secrets
+          key: email-password
 
 # =============================================================================
 # POSTGRESQL (BUNDLED) - Using longhorn-2r
@@ -79,8 +97,10 @@ postgresql:
   auth:
     username: authentik
     database: authentik
+    # These must be set to empty strings when using existingSecret
     postgresPassword: ""
     password: ""
+    # Use existing secret created by sealed-secrets
     existingSecret: authentik-secrets
     secretKeys:
       adminPasswordKey: db-password
