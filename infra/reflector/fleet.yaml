@@ -1,1 +1,28 @@
 defaultNamespace: reflector
+
+# kubernetes-reflector - Secret and ConfigMap replication
+# Enables sharing TLS certificates across namespaces
+
+helm:
+  repo: https://emberstack.github.io/helm-charts
+  chart: reflector
+  version: 7.1.288
+  releaseName: reflector
+  waitForJobs: true
+
+  values:
+    resources:
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+
+    configuration:
+      logging:
+        minimumLevel: Information
+
+labels:
+  role: infrastructure
+  component: reflector
