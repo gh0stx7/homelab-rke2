@@ -79,7 +79,8 @@ postgresql:
   auth:
     username: authentik
     database: authentik
-    # Use existing secret created by sealed-secrets
+    postgresPassword: ""
+    password: ""
     existingSecret: authentik-secrets
     secretKeys:
       adminPasswordKey: db-password

@@ -12,3 +12,4 @@ helm:
 
 dependsOn:
   - name: homelab-rke2-infra-cert-manager
+  - name: homelab-rke2-infra-reflector
