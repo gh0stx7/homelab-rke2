@@ -178,6 +178,13 @@ redis:
 # GLOBAL SETTINGS
 # =============================================================================
 global:
+  postgresql:
+    auth:
+      existingSecret: authentik-secrets
+      secretKeys:
+        adminPasswordKey: db-password
+        userPasswordKey: db-password
+
   # Security context
   securityContext:
     runAsNonRoot: true
