@@ -98,8 +98,8 @@ postgresql:
     username: authentik
     database: authentik
     # These must be set to empty strings when using existingSecret
-    postgresPassword: ""
-    password: ""
+    postgresPassword: "placeholder-to-satisfy-upgrade-check"
+    password: "placeholder-to-satisfy-upgrade-check"
     # Use existing secret created by sealed-secrets
     existingSecret: authentik-secrets
     secretKeys:
@@ -181,6 +181,8 @@ global:
   postgresql:
     auth:
       existingSecret: authentik-secrets
+      password: "placeholder-to-satisfy-upgrade-check"
+      postgresPassword: "placeholder-to-satisfy-upgrade-check"
       secretKeys:
         adminPasswordKey: db-password
         userPasswordKey: db-password
