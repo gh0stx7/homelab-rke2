@@ -1,0 +1,177 @@
+# =============================================================================
+# HOME ASSISTANT HELM VALUES - INTERNAL ACCESS ONLY
+# =============================================================================
+
+# Controller configuration - StatefulSet for stable identity
+controller:
+  type: StatefulSet
+
+# Image configuration
+image:
+  repository: ghcr.io/home-assistant/home-assistant
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+# =============================================================================
+# PERSISTENCE - Critical Configuration Data
+# =============================================================================
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 20Gi
+  storageClass: longhorn-2r
+
+# =============================================================================
+# NETWORKING
+# =============================================================================
+service:
+  type: ClusterIP
+  port: 8123
+
+ingress:
+  enabled: false
+
+# =============================================================================
+# RESOURCES
+# =============================================================================
+resources:
+  requests:
+    cpu: 500m
+    memory: 512Mi
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+
+# =============================================================================
+# HOME ASSISTANT CONFIGURATION
+# =============================================================================
+configuration:
+  enabled: true
+  forceInit: true
+
+  # Trusted proxies for reverse proxy support
+  trusted_proxies:
+    - 10.42.0.0/16      # RKE2 default service CIDR (verify with: kubectl cluster-info dump | grep -i cidr)
+    - 10.43.0.0/16      # RKE2 default pod CIDR
+    - 10.10.30.0/24     # Your nginx ingress subnet
+    - 172.16.0.0/12     # Private IP range
+    - 192.168.0.0/16    # Private IP range
+    - 127.0.0.1
+
+  # Custom configuration template
+  templateConfig: |-
+    # Loads default set of integrations
+    default_config:
+
+    # HTTP Configuration for reverse proxy
+    http:
+      use_x_forwarded_for: true
+      trusted_proxies:
+        {{- range .Values.configuration.trusted_proxies }}
+        - {{ . }}
+        {{- end }}
+
+    # Load frontend themes from the themes folder
+    frontend:
+      themes: !include_dir_merge_named themes
+
+    # Automation, script, and scene management
+    automation: !include automations.yaml
+    script: !include scripts.yaml
+    scene: !include scenes.yaml
+
+# =============================================================================
+# ENVIRONMENT VARIABLES
+# =============================================================================
+env:
+  - name: TZ
+    value: "America/New_York"
+
+# =============================================================================
+# SECURITY CONTEXT
+# =============================================================================
+podSecurityContext:
+  fsGroup: 1000
+
+securityContext:
+  runAsUser: 1000
+  runAsNonRoot: true
+
+# =============================================================================
+# HOST NETWORK
+# =============================================================================
+# Enable ONLY if you need mDNS auto-discovery of devices
+# Most integrations work fine without hostNetwork
+hostNetwork: false
+dnsPolicy: ClusterFirst
+
+# =============================================================================
+# NODE SCHEDULING
+# =============================================================================
+affinity: {}
+tolerations: []
+
+# =============================================================================
+# USB DEVICE SUPPORT (OPTIONAL)
+# =============================================================================
+# Uncomment and configure if you have Zigbee/Z-Wave USB dongles
+# additionalVolumes:
+#   - name: zigbee-dongle
+#     hostPath:
+#       path: /dev/serial/by-id/usb-ITEAD_SONOFF_Zigbee_3.0_USB_Dongle_Plus_V2_20230509111242-if00
+#       type: CharDevice
+#
+# additionalMounts:
+#   - name: zigbee-dongle
+#     mountPath: /dev/ttyUSB0
+#
+# nodeSelector:
+#   home-assistant: "true"
+#
+# securityContext:
+#   privileged: true
+
+additionalVolumes: []
+additionalMounts: []
+
+# =============================================================================
+# CODE-SERVER ADDON
+# =============================================================================
+# Enable for web-based configuration file editing
+addons:
+  codeserver:
+    enabled: true
+
+    image:
+      repository: ghcr.io/coder/code-server
+      tag: latest
+      pullPolicy: IfNotPresent
+
+    # Authentication
+    auth:
+      enabled: true
+      existingSecret: "home-assistant-codeserver-password"
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+    service:
+      type: ClusterIP
+      port: 12321
+
+    ingress:
+      enabled: false
+
+# =============================================================================
+# SERVICE ACCOUNT
+# =============================================================================
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""

@@ -1,0 +1,68 @@
+---
+# Internal Ingress - Home Assistant (LAN access only)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: home-assistant-internal
+  namespace: home-assistant
+  annotations:
+    # WebSocket support for Home Assistant
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/proxy-set-headers: |
+      Upgrade $http_upgrade
+      Connection $connection_upgrade
+
+    # Security headers
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  ingressClassName: nginx-internal  # Internal nginx controller
+  tls:
+    - secretName: ghostlabz-wildcard-tls
+      hosts:
+        - home.lab.ghostlabz.net
+  rules:
+    - host: home.lab.ghostlabz.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: home-assistant
+                port:
+                  number: 8123
+
+---
+# Code-Server Internal Ingress (for configuration editing)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: home-assistant-code-internal
+  namespace: home-assistant
+  annotations:
+    # WebSocket support for code-server
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+
+    # Security
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  ingressClassName: nginx-internal  # Internal nginx controller
+  tls:
+    - secretName: ghostlabz-wildcard-tls
+      hosts:
+        - home-code.lab.ghostlabz.net
+  rules:
+    - host: home-code.lab.ghostlabz.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: home-assistant-codeserver
+                port:
+                  number: 12321

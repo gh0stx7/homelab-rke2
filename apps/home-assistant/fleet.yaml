@@ -1,0 +1,22 @@
+defaultNamespace: home-assistant
+
+# Home Assistant - Smart Home Automation Platform
+# Internal access only via nginx-internal
+
+helm:
+  repo: http://pajikos.github.io/home-assistant-helm-chart/
+  chart: home-assistant
+  version: 0.3.30
+  releaseName: home-assistant
+  waitForJobs: true
+
+  valuesFiles:
+    - values.yaml
+
+labels:
+  app: home-assistant
+  role: automation
+
+dependsOn:
+  - name: homelab-rke2-infra-cert-manager-config
+  - name: homelab-rke2-infra-nginx-ingress-internal
