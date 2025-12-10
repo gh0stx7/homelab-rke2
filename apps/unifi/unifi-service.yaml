@@ -5,18 +5,12 @@ metadata:
   namespace: unifi
   annotations:
     cloudprovider.harvesterhci.io/ipam: pool
-    cloudprovider.harvesterhci.io/ippool: mgmt-pool
-
-    loadbalancer.harvesterhci.io/cluster: homelab
-    loadbalancer.harvesterhci.io/namespace: default
-    loadbalancer.harvesterhci.io/network: default/infra-mgmt
-    loadbalancer.harvesterhci.io/ipam: pool
-    loadbalancer.harvesterhci.io/ippool: mgmt-pool
+    cloudprovider.harvesterhci.io/ippool: global-ip-pool
 spec:
   selector:
     app: unifi-controller
   type: LoadBalancer
-  loadBalancerIP: "10.10.50.50"
+  loadBalancerIP: "10.10.30.80"
   ports:
     - name: web-admin
       port: 8443
