@@ -9,6 +9,6 @@ resources:
 
 # Labels applied to all resources
 labels:
-  - includeSelectors: true
+  - includeSelectors: false
     pairs:
       managed-by: fleet
