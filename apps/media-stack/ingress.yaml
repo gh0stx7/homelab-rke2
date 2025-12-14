@@ -2,7 +2,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: media-external
+  name: jellyfin-external
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "0"
     # Rate limiting
@@ -10,7 +10,7 @@ metadata:
     nginx.ingress.kubernetes.io/limit-connections: "50"
     nginx.ingress.kubernetes.io/limit-burst-multiplier: "10"
 spec:
-  ingressClassName: nginx # <--- Public Nginx
+  ingressClassName: nginx-external
   tls:
     - hosts:
         - ghostlabz.net
@@ -66,6 +66,7 @@ spec:
   ingressClassName: nginx-internal
   tls:
     - hosts:
+        - jellyfin.lab.ghostlabz.net
         - sonarr.lab.ghostlabz.net
         - sabnzbd.lab.ghostlabz.net
         - prowlarr.lab.ghostlabz.net
@@ -103,3 +104,9 @@ spec:
           - path: /
             pathType: Prefix
             backend: { service: { name: radarr, port: { number: 7878 } } }
+    - host: jellyfin.lab.ghostlabz.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: jellyfin, port: { number: 8096 } } }

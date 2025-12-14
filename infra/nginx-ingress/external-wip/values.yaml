@@ -28,3 +28,8 @@ controller:
 
   publishService:
     enabled: true
+
+    # Optional: Enable ModSecurity (WAF) here later
+    # config:
+    #   enable-modsecurity: "true"
+    #   enable-owasp-modsecurity-crs: "true"
