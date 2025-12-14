@@ -11,11 +11,12 @@ controller:
 
   nodeSelector:
     dedicated: edge
-    tolerations:
-      - key: "dedicated"
-        operator: "Equal"
-        value: "edge"
-        effect: "NoSchedule"
+
+  tolerations:
+    - key: "dedicated"
+      operator: "Equal"
+      value: "edge"
+      effect: "NoSchedule"
 
   service:
     type: LoadBalancer
@@ -23,6 +24,7 @@ controller:
     annotations:
       cloudprovider.harvesterhci.io/ipam: pool
       cloudprovider.harvesterhci.io/ippool: dmz-pool
+      cloudprovider.harvesterhci.io/network: default/dmz
 
   publishService:
     enabled: true
