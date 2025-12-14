@@ -1,5 +1,6 @@
 controller:
   name: controller
+  kind: DaemonSet
 
   ingressClassResource:
     name: nginx-external
