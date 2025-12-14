@@ -1,0 +1,28 @@
+controller:
+  name: controller
+
+  ingressClassResource:
+    name: nginx-external
+    enabled: true
+    default: false
+    controllerValue: "k8s.io/ingress-nginx-external"
+
+  ingressClass: nginx-external
+
+  nodeSelector:
+    dedicated: edge
+    tolerations:
+      - key: "dedicated"
+        operator: "Equal"
+        value: "edge"
+        effect: "NoSchedule"
+
+  service:
+    type: LoadBalancer
+    externalTrafficPolicy: Local
+    annotations:
+      cloudprovider.harvesterhci.io/ipam: pool
+      cloudprovider.harvesterhci.io/ippool: dmz-pool
+
+  publishService:
+    enabled: true
