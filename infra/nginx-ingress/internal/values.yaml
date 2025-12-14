@@ -4,7 +4,7 @@ controller:
   ingressClassResource:
     name: nginx-internal
     enabled: true
-    default: false
+    default: false #set to true when deleting old external ingress
     controllerValue: "k8s.io/ingress-nginx-internal"
 
   ingressClass: nginx-internal
