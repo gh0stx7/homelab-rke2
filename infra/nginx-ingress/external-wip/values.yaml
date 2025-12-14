@@ -23,7 +23,6 @@ controller:
     type: LoadBalancer
     externalTrafficPolicy: Local
     annotations:
-      kube-vip.io/ignore: "true"
       cloudprovider.harvesterhci.io/ipam: pool
       loadbalancer.harvesterhci.io/network: default/dmz
 
