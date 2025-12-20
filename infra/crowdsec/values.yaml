@@ -6,7 +6,7 @@ image:
 agent:
   acquisition:
   - namespace: ingress-external
-    podName: nginx-external-.*
+    podName: nginx-external-*
     program: nginx
 
   env:
