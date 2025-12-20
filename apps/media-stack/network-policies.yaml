@@ -80,6 +80,14 @@ spec:
         - protocol: TCP
           port: 8096
 
+    - from:
+        - podSelector:
+            matchLabels:
+              app: jellyseerr
+      ports:
+        - protocol: TCP
+          port: 8096
+
   egress:
     # DNS already allowed by external-services-allow-dns policy
 

@@ -7,4 +7,3 @@ metadata:
     name: ingress-internal
     role: ingress
     trust-boundary: internal
-    pod-security.kubernetes.io/enforce: baseline
