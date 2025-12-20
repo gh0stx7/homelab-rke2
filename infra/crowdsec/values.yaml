@@ -6,10 +6,8 @@ image:
 agent:
   acquisition:
     - namespace: ingress-external
-      pod_name: ingress-nginx-.*
+      podName: ingress-nginx-.*
       program: nginx
-      labels:
-        type: nginx
 
   env:
     - name: COLLECTIONS
