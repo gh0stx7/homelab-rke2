@@ -11,6 +11,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: jellyfin
+  labels:
+    app: jellyfin
+    exposure: external
 spec:
   replicas: 1
   strategy: { type: Recreate }
@@ -18,7 +21,9 @@ spec:
     matchLabels: { app: jellyfin }
   template:
     metadata:
-      labels: { app: jellyfin }
+      labels:
+        app: jellyfin
+        exposure: external
     spec:
       affinity:
         podAffinity:

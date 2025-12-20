@@ -1,0 +1,5 @@
+defaultNamespace: default
+
+labels:
+  role: infrastructure
+  component: namespaces

@@ -1,0 +1,184 @@
+---
+# Default deny for external-facing services only
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: external-services-default-deny
+  namespace: media
+spec:
+  podSelector:
+    matchLabels:
+      exposure: external
+  policyTypes:
+    - Ingress
+    - Egress
+
+---
+# Allow DNS for all pods with exposure: external label
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: external-services-allow-dns
+  namespace: media
+spec:
+  podSelector:
+    matchLabels:
+      exposure: external
+  policyTypes:
+    - Egress
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+---
+# Jellyfin-specific policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: jellyfin
+  namespace: media
+spec:
+  podSelector:
+    matchLabels:
+      app: jellyfin
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    # Allow from external ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-external
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8096
+
+    # Allow from internal ingress controller (LAN access)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-internal
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8096
+
+  egress:
+    # DNS already allowed by external-services-allow-dns policy
+
+    # NFS storage access to your Unraid NAS
+    - to:
+        - ipBlock:
+            cidr: 10.10.20.10/32  # Your NAS IP
+      ports:
+        - protocol: TCP
+          port: 2049  # NFS
+
+    # Allow internet for metadata/images (The Movie DB, fanart, etc.)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.10.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80
+
+---
+# Jellyseerr-specific policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: jellyseerr
+  namespace: media
+spec:
+  podSelector:
+    matchLabels:
+      app: jellyseerr
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    # Allow from external ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-external
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 5055
+
+    # Allow from internal ingress (LAN access)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-internal
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 5055
+
+  egress:
+    # DNS already allowed
+
+    # Allow to Jellyfin (same namespace)
+    - to:
+        - podSelector:
+            matchLabels:
+              app: jellyfin
+      ports:
+        - protocol: TCP
+          port: 8096
+
+    # Allow to Sonarr API (same namespace)
+    - to:
+        - podSelector:
+            matchLabels:
+              app: sonarr
+      ports:
+        - protocol: TCP
+          port: 8989
+
+    # Allow to Radarr API (same namespace)
+    - to:
+        - podSelector:
+            matchLabels:
+              app: radarr
+      ports:
+        - protocol: TCP
+          port: 7878
+
+    # Internet for TMDB API, notifications, webhooks, etc.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.10.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80
