@@ -5,9 +5,9 @@ image:
 
 agent:
   acquisition:
-    - namespace: ingress-external
-      podName: ingress-nginx-.*
-      program: nginx
+  - namespace: ingress-external
+    podName: nginx-external-.*
+    program: nginx
 
   env:
     - name: COLLECTIONS
