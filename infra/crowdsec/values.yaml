@@ -8,6 +8,7 @@ agent:
   - namespace: ingress-external
     podName: nginx-external-*
     program: nginx
+    poll_without_inotify: true
 
   env:
     - name: COLLECTIONS
