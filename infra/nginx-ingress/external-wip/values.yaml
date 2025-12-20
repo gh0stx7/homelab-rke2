@@ -10,24 +10,22 @@ controller:
 
   ingressClass: nginx-external
 
-  nodeSelector:
-    dedicated: edge
-
-  tolerations:
-    - key: "dedicated"
-      operator: "Equal"
-      value: "edge"
-      effect: "NoSchedule"
-
   service:
+    enabled: true
     type: LoadBalancer
     externalTrafficPolicy: Local
+    loadBalancerIP: "10.10.30.80"
     annotations:
       cloudprovider.harvesterhci.io/ipam: pool
-      loadbalancer.harvesterhci.io/network: default/dmz
+      cloudprovider.harvesterhci.io/ippool: global-ip-pool
+    healthCheckNodePort: 0
 
   publishService:
     enabled: true
+
+  config:
+    use-forwarded-headers: "true"
+    enable-real-ip: "true"
 
     # Optional: Enable ModSecurity (WAF) here later
     # config:
