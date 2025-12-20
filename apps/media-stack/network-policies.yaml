@@ -62,6 +62,7 @@ spec:
           podSelector:
             matchLabels:
               app.kubernetes.io/name: ingress-nginx
+              app.kubernetes.io/instance: nginx-external
       ports:
         - protocol: TCP
           port: 8096
@@ -74,6 +75,7 @@ spec:
           podSelector:
             matchLabels:
               app.kubernetes.io/name: ingress-nginx
+              app.kubernetes.io/instance: nginx-internal
       ports:
         - protocol: TCP
           port: 8096
@@ -125,6 +127,7 @@ spec:
           podSelector:
             matchLabels:
               app.kubernetes.io/name: ingress-nginx
+              app.kubernetes.io/instance: nginx-external
       ports:
         - protocol: TCP
           port: 5055
@@ -137,6 +140,7 @@ spec:
           podSelector:
             matchLabels:
               app.kubernetes.io/name: ingress-nginx
+              app.kubernetes.io/instance: nginx-internal
       ports:
         - protocol: TCP
           port: 5055
