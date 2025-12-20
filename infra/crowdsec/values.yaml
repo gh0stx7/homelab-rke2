@@ -1,0 +1,32 @@
+container_runtime: containerd
+
+image:
+  tag: "v1.6.4"
+
+agent:
+  acquisition:
+    - namespace: ingress-external
+      pod_name: ingress-nginx-.*
+      program: nginx
+      labels:
+        type: nginx
+
+  env:
+    - name: COLLECTIONS
+      value: "crowdsecurity/nginx"
+
+lapi:
+  env:
+    - name: DISABLE_ONLINE_API
+      value: "false"
+
+  # Persistent storage for the database
+  persistentVolume:
+    config:
+      enabled: true
+      storageClassName: longhorn-2r
+      size: 1Gi
+    data:
+      enabled: true
+      storageClassName: longhorn-2r
+      size: 1Gi

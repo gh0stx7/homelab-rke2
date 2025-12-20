@@ -1,0 +1,19 @@
+defaultNamespace: crowdsec
+
+# CrowdSec Intrusion Detection System
+# Scans logs and detects attacks
+
+helm:
+  repo: https://crowdsecurity.github.io/helm-charts
+  chart: crowdsec
+  version: 0.21.1
+  releaseName: crowdsec
+  valuesFiles:
+    - values.yaml
+
+labels:
+  role: security
+  component: crowdsec
+
+dependsOn:
+  - name: homelab-rke2-infra-namespaces

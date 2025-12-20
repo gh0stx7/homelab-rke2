@@ -26,8 +26,5 @@ controller:
   config:
     use-forwarded-headers: "true"
     enable-real-ip: "true"
-
-    # Optional: Enable ModSecurity (WAF) here later
-    # config:
-    #   enable-modsecurity: "true"
-    #   enable-owasp-modsecurity-crs: "true"
+    enable-modsecurity: "true"
+    enable-owasp-modsecurity-crs: "true"
