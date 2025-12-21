@@ -4,7 +4,7 @@ kind: Kustomization
 namespace: crowdsec
 
 resources:
-  - cloudflare-bouncer.yaml
+  - firewall-bouncer.yaml
   - sealed-secrets.yaml
 
 # Consistent labeling

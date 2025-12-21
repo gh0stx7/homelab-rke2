@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: firewall-bouncer-config
+  namespace: crowdsec
+data:
+  crowdsec-firewall-bouncer.yaml: |
+    mode: iptables
+    update_frequency: 10s
+    api_url: http://crowdsec-service.crowdsec.svc.cluster.local:8080
+    api_key: ${BOUNCER_API_KEY}
+    disable_ipv6: true
+    # Log to stdout so kubectl logs can see it
+    log_mode: stdout
+    log_level: info
+    # Block traffic on these chains
+    iptables_chains:
+      - INPUT
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: firewall-bouncer
+  namespace: crowdsec
+  labels:
+    app: firewall-bouncer
+spec:
+  selector:
+    matchLabels:
+      app: firewall-bouncer
+  template:
+    metadata:
+      labels:
+        app: firewall-bouncer
+    spec:
+      hostNetwork: true # Critical: needs to see real host interfaces
+      nodeSelector:
+        kubernetes.io/os: linux
+      containers:
+        - name: firewall-bouncer
+          image: crowdsecurity/crowdsec-firewall-bouncer:latest
+          securityContext:
+            privileged: true # Critical: needs permission to edit iptables
+            capabilities:
+              add: ["NET_ADMIN", "NET_RAW"]
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              # Install gettext for envsubst
+              if [ -x "$(command -v apk)" ]; then apk add --no-cache gettext; fi && \
+              if [ -x "$(command -v apt-get)" ]; then apt-get update && apt-get install -y gettext-base; fi && \
+              envsubst < /config/crowdsec-firewall-bouncer.yaml > /etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml && \
+              /usr/bin/crowdsec-firewall-bouncer -c /etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml
+          envFrom:
+            - secretRef:
+                name: firewall-bouncer-secrets
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      volumes:
+        - name: config
+          configMap:
+            name: firewall-bouncer-config
