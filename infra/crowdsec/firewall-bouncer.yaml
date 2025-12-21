@@ -5,18 +5,26 @@ metadata:
   namespace: crowdsec
 data:
   crowdsec-firewall-bouncer.yaml: |
-    mode: iptables
+    mode: nftables
     update_frequency: 10s
     api_url: http://crowdsec-service.crowdsec.svc.cluster.local:8080
     api_key: ${BOUNCER_API_KEY}
     disable_ipv6: true
-    # Log to stdout so kubectl logs can see it
     log_mode: stdout
     log_level: info
-    # Block traffic on these chains
-    iptables_chains:
-      - INPUT
-      - FORWARD
+    
+    # Nftables specific config
+    nftables:
+      ipv4:
+        enabled: true
+        set-only: false
+        table: crowdsec
+        chain: crowdsec-chain
+      ipv6:
+        enabled: true
+        set-only: false
+        table: crowdsec
+        chain: crowdsec-chain
 ---
 apiVersion: apps/v1
 kind: DaemonSet
