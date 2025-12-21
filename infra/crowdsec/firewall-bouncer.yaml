@@ -43,15 +43,6 @@ spec:
             privileged: true
             capabilities:
               add: ["NET_ADMIN", "NET_RAW"]
-          command: ["/bin/sh", "-c"]
-          args:
-            - |
-              mkdir -p /etc/crowdsec/bouncers && \
-              # Install gettext for envsubst
-              if [ -x "$(command -v apk)" ]; then apk add --no-cache gettext; fi && \
-              if [ -x "$(command -v apt-get)" ]; then apt-get update && apt-get install -y gettext-base; fi && \
-              envsubst < /config/crowdsec-firewall-bouncer.yaml > /etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml && \
-              /usr/bin/crowdsec-firewall-bouncer -c /etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml
           envFrom:
             - secretRef:
                 name: firewall-bouncer-secrets
