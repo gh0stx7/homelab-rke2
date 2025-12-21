@@ -33,14 +33,14 @@ spec:
       labels:
         app: firewall-bouncer
     spec:
-      hostNetwork: true # Critical: needs to see real host interfaces
+      hostNetwork: true
       nodeSelector:
         kubernetes.io/os: linux
       containers:
         - name: firewall-bouncer
-          image: crowdsecurity/crowdsec-firewall-bouncer:latest
+          image: ghcr.io/shgew/cs-firewall-bouncer-docker:latest
           securityContext:
-            privileged: true # Critical: needs permission to edit iptables
+            privileged: true
             capabilities:
               add: ["NET_ADMIN", "NET_RAW"]
           command: ["/bin/sh", "-c"]
