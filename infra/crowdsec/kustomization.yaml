@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: crowdsec
+
+resources:
+  - cloudflare-bouncer.yaml
+  - sealed-secrets.yaml
+
+# Consistent labeling
+labels:
+  - includeSelectors: false
+    pairs:
+      managed-by: fleet
