@@ -12,10 +12,8 @@ controller:
   service:
     type: LoadBalancer
     externalTrafficPolicy: Cluster
-    loadBalancerIP: "10.10.30.75"
     annotations:
-      cloudprovider.harvesterhci.io/ipam: pool
-      cloudprovider.harvesterhci.io/ippool: global-ip-pool
+      metallb.io/loadBalancerIPs: "10.10.30.50"
 
   publishService:
     enabled: true
