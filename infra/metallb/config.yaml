@@ -2,7 +2,7 @@ apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
 metadata:
   name: static-ingress-pool
-  namespace: metallb
+  namespace: metallb-system
 spec:
   addresses:
     - 10.10.30.75/32
@@ -13,7 +13,7 @@ apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
 metadata:
   name: default-advertisement
-  namespace: metallb
+  namespace: metallb-system
 spec:
   ipAddressPools:
     - static-ingress-pool
