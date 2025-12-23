@@ -1,0 +1,12 @@
+defaultNamespace: metallb
+helm:
+  repo: https://metallb.github.io/metallb
+  chart: metallb
+  version: 0.15.3
+  releaseName: metallb
+
+  valuesFiles:
+    - values.yaml
+
+dependsOn:
+  - name: homelab-rke2-infra-namespaces

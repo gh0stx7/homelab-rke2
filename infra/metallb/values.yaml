@@ -1,0 +1,8 @@
+controller:
+  tolerations:
+    - effect: NoSchedule
+      operator: Exists
+speaker:
+  tolerations:
+    - effect: NoSchedule
+      operator: Exists

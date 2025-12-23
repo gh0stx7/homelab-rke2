@@ -1,0 +1,12 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: rke2-harvester-cloud-provider
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    cloudControllerManager:
+      extraArgs:
+        - "--controllers=cloud-node,cloud-node-lifecycle,route"
+        - "--cloud-provider=harvester"
+        - "--cloud-config=/etc/config/cloud-config"
