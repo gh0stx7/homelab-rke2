@@ -18,6 +18,8 @@ lapi:
   env:
     - name: DISABLE_ONLINE_API
       value: "false"
+    - name: AUTO_DELETE_MACHINES
+      value: "true"
 
   # Persistent storage for the database
   persistentVolume:
