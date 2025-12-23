@@ -17,3 +17,7 @@ metadata:
 spec:
   ipAddressPools:
     - static-ingress-pool
+  nodeSelectors:
+    - matchExpressions:
+      - key: node-role.kubernetes.io/worker
+        operator: Exists
