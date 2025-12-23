@@ -10,10 +10,10 @@ data:
     
     # --- CONFIGURATION ---
     # Trigger archival when Hot storage exceeds this percentage
-    THRESHOLD_PERCENT=80
+    THRESHOLD_PERCENT=70
     
     # Target to reach after archival (to avoid constant churn)
-    TARGET_PERCENT=70
+    TARGET_PERCENT=60
     
     # Minimum free space to maintain (in GB) - acts as a safety floor
     MIN_FREE_GB=50
@@ -87,12 +87,11 @@ data:
         # Calculate grace period cutoff (in seconds since epoch)
         GRACE_CUTOFF=$(( $(date +%s) - (GRACE_PERIOD_HOURS * 3600) ))
     
-        # STRATEGY: Archive oldest files first, but skip very recent files
-        # Uses %C@ (Change Time)
-        # Format: mtime(epoch) size(bytes) path
-        find "$HOT" -type f ! -type l -printf '%C@ %s %p\n' 2>/dev/null | \
+        # STRATEGY: Archive oldest files first based on CREATION (Birth) date on this disk.
+        # %B@ = Birth Time (Creation) - The most reliable "Download Date" metric.
+        find "$HOT" -type f ! -type l -printf '%B@ %s %p\n' 2>/dev/null | \
         sort -n | \
-        while IFS=' ' read -r CTIME SIZE FILE_PATH; do
+        while IFS=' ' read -r BIRTH SIZE FILE_PATH; do
     
           # Stop if we've freed enough space
           if [ "$SPACE_FREED" -ge "$SPACE_TO_FREE" ]; then
@@ -101,11 +100,11 @@ data:
           fi
     
           # Convert timestamp to integer
-          CTIME_INT=${CTIME%.*}
+          BIRTH_INT=${BIRTH%.*}
     
           # Skip files within grace period (recently downloaded)
-          if [ "$CTIME_INT" -gt "$GRACE_CUTOFF" ]; then
-            AGE_HOURS=$(( ($(date +%s) - CTIME_INT) / 3600 ))
+          if [ "$BIRTH_INT" -gt "$GRACE_CUTOFF" ]; then
+            AGE_HOURS=$(( ($(date +%s) - BIRTH_INT) / 3600 ))
             echo "[Mover] ⏭️  Skipping (too new - ${AGE_HOURS}h old): $(basename "$FILE_PATH")"
             continue
           fi
