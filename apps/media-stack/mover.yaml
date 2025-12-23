@@ -88,11 +88,11 @@ data:
         GRACE_CUTOFF=$(( $(date +%s) - (GRACE_PERIOD_HOURS * 3600) ))
     
         # STRATEGY: Archive oldest files first, but skip very recent files
-        # Uses modification time (mtime) which is reliable and meaningful
+        # Uses %C@ (Change Time)
         # Format: mtime(epoch) size(bytes) path
-        find "$HOT" -type f ! -type l -printf '%T@ %s %p\n' 2>/dev/null | \
+        find "$HOT" -type f ! -type l -printf '%C@ %s %p\n' 2>/dev/null | \
         sort -n | \
-        while IFS=' ' read -r MTIME SIZE FILE_PATH; do
+        while IFS=' ' read -r CTIME SIZE FILE_PATH; do
     
           # Stop if we've freed enough space
           if [ "$SPACE_FREED" -ge "$SPACE_TO_FREE" ]; then
@@ -100,12 +100,12 @@ data:
             break
           fi
     
-          # Convert mtime to integer for comparison (remove decimal)
-          MTIME_INT=${MTIME%.*}
+          # Convert timestamp to integer
+          CTIME_INT=${CTIME%.*}
     
           # Skip files within grace period (recently downloaded)
-          if [ "$MTIME_INT" -gt "$GRACE_CUTOFF" ]; then
-            AGE_HOURS=$(( ($(date +%s) - MTIME_INT) / 3600 ))
+          if [ "$CTIME_INT" -gt "$GRACE_CUTOFF" ]; then
+            AGE_HOURS=$(( ($(date +%s) - CTIME_INT) / 3600 ))
             echo "[Mover] ⏭️  Skipping (too new - ${AGE_HOURS}h old): $(basename "$FILE_PATH")"
             continue
           fi
