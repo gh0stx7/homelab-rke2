@@ -1,0 +1,76 @@
+# Ollama configuration
+ollama:
+  # GPU configuration
+  gpu:
+    enabled: true
+    type: nvidia
+    number: 1
+
+  # Models to pull at startup
+  models:
+    pull:
+      - llama3.1:70b-instruct-q4_K_M
+
+# Runtime configuration (top level, not under ollama)
+runtimeClassName: nvidia
+
+# Node selection (top level)
+nodeSelector:
+  nvidia.com/gpu: "true"
+
+# Resource allocation (top level)
+resources:
+  requests:
+    memory: 70Gi
+    cpu: 2000m
+  limits:
+    memory: 80Gi
+    cpu: 8000m
+
+# Persistent storage configuration
+persistentVolume:
+  enabled: true
+  size: 100Gi
+  storageClass: longhorn-1r
+  accessModes:
+    - ReadWriteOnce
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 11434
+
+# Ingress - disable, we'll create our own
+ingress:
+  enabled: false
+
+# Environment variables
+extraEnv:
+  - name: OLLAMA_HOST
+    value: "0.0.0.0:11434"
+  - name: OLLAMA_ORIGINS
+    value: "*"
+
+# Liveness probe
+livenessProbe:
+  enabled: true
+  path: /
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+
+# Readiness probe
+readinessProbe:
+  enabled: true
+  path: /
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+
+# Deployment strategy
+updateStrategy:
+  type: Recreate

@@ -1,0 +1,25 @@
+defaultNamespace: ollama
+
+# Ollama Stack - Local LLM with Web UI and Search
+# Uses official OTWLD Helm chart for Ollama
+
+helm:
+  repo: https://helm.otwld.com
+  chart: ollama
+  version: 1.36.0
+  releaseName: ollama
+  waitForJobs: true
+
+  valuesFiles:
+    - values.yaml
+
+labels:
+  app: ollama-stack
+  role: ai
+
+dependsOn:
+  - name: homelab-rke2-infra-cert-manager-config
+  - name: homelab-rke2-infra-nginx-ingress-internal
+  - name: homelab-rke2-infra-nvidia-device-plugin
+  - name: homelab-rke2-infra-media-storage
+  - name: homelab-rke2-infra-namespaces
