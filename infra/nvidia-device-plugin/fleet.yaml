@@ -1,0 +1,8 @@
+defaultNamespace: kube-system
+
+# NVIDIA Device Plugin
+# Exposes GPUs to Kubernetes for scheduling
+
+labels:
+  role: infrastructure
+  component: gpu
