@@ -22,10 +22,10 @@ nodeSelector:
 resources:
   requests:
     memory: 70Gi
-    cpu: 2000m
+    cpu: 20000m
   limits:
     memory: 80Gi
-    cpu: 8000m
+    cpu: 30000m
 
 # Persistent storage configuration
 persistentVolume:
