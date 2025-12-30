@@ -31,7 +31,7 @@ resources:
 persistentVolume:
   enabled: true
   size: 100Gi
-  storageClass: longhorn-1r
+  storageClass: longhorn-2r
   accessModes:
     - ReadWriteOnce
 

@@ -21,5 +21,4 @@ dependsOn:
   - name: homelab-rke2-infra-cert-manager-config
   - name: homelab-rke2-infra-nginx-ingress-internal
   - name: homelab-rke2-infra-nvidia-device-plugin
-  - name: homelab-rke2-infra-media-storage
   - name: homelab-rke2-infra-namespaces
