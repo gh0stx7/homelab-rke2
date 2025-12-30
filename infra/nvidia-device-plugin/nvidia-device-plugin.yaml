@@ -21,6 +21,8 @@ spec:
           operator: Exists
           effect: NoSchedule
       priorityClassName: "system-node-critical"
+      hostNetwork: true
+      hostPID: true
       containers:
         - image: nvcr.io/nvidia/k8s-device-plugin:v0.18.0
           name: nvidia-device-plugin-ctr
@@ -37,12 +39,14 @@ spec:
           volumeMounts:
             - name: device-plugin
               mountPath: /var/lib/kubelet/device-plugins
-            - name: dev
-              mountPath: /dev
+            - name: host-root
+              mountPath: /host
+              readOnly: true
+              mountPropagation: HostToContainer
       volumes:
         - name: device-plugin
           hostPath:
             path: /var/lib/kubelet/device-plugins
-        - name: dev
+        - name: host-root
           hostPath:
-            path: /dev
+            path: /
