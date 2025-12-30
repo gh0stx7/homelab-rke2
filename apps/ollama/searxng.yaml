@@ -1,3 +1,4 @@
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -31,6 +32,8 @@ kind: Deployment
 metadata:
   name: searxng
   namespace: ollama
+  labels:
+    app: searxng
 spec:
   replicas: 1
   selector:
@@ -48,7 +51,15 @@ spec:
             - sh
             - -c
             - |
-              sed "s/REPLACEME/${SEARXNG_SECRET}/" /config-template/settings.yml > /config/settings.yml
+              echo "Starting config initialization..."
+              if [ -z "$SEARXNG_SECRET" ]; then
+                echo "ERROR: SEARXNG_SECRET environment variable is not set"
+                exit 1
+              fi
+              echo "Secret key found, generating config..."
+              # Use | as delimiter instead of / to avoid issues with base64 strings
+              sed "s|REPLACEME|${SEARXNG_SECRET}|g" /config-template/settings.yml > /config/settings.yml
+              echo "Config generated successfully"
           env:
             - name: SEARXNG_SECRET
               valueFrom:
@@ -104,6 +115,8 @@ kind: Service
 metadata:
   name: searxng
   namespace: ollama
+  labels:
+    app: searxng
 spec:
   selector:
     app: searxng
