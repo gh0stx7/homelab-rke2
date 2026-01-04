@@ -9,7 +9,7 @@ ollama:
   # Models to pull at startup
   models:
     pull:
-      - llama3.1:70b-instruct-q4_K_M
+      - nomic-embed-text:latest
 
 # Runtime configuration (top level, not under ollama)
 runtimeClassName: nvidia

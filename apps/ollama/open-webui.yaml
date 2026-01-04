@@ -61,6 +61,12 @@ spec:
               value: "5"
             - name: RAG_WEB_SEARCH_CONCURRENT_REQUESTS
               value: "10"
+            - name: RAG_EMBEDDING_MODEL
+              value: "nomic-embed-text:latest"
+            - name: RAG_EMBEDDING_MODEL_AUTO_UPDATE
+              value: "true"
+            - name: RAG_EMBEDDING_OLLAMA_BASE_URL
+              value: "http://ollama:11434"
           resources:
             requests:
               memory: "2Gi"
