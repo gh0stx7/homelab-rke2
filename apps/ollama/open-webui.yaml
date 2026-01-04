@@ -41,7 +41,11 @@ spec:
               mountPath: /app/backend/data
           env:
             - name: OLLAMA_BASE_URL
-              value: "http://ollama:11434"
+              value: "http://10.10.10.44:11434"
+            - name: OPENAI_API_BASE_URL
+              value: "http://10.10.10.44:11434/v1"
+            - name: ENABLE_OLLAMA_API
+              value: "false"
             - name: WEBUI_SECRET_KEY
               valueFrom:
                 secretKeyRef:
