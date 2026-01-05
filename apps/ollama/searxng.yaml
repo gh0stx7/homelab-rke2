@@ -11,6 +11,11 @@ data:
       secret_key: "REPLACEME"
       limiter: false
       image_proxy: true
+    botdetection:
+      ip_limit:
+        filter_link_local: false
+      link_token:
+        secret_key: ""
     outgoing:
       request_timeout: 15.0
       max_request_timeout: 30.0
@@ -33,29 +38,31 @@ data:
         - json
     engines:
       - name: duckduckgo
-        disabled: false
-        timeout: 15.0
-        weight: 1
-      
+        disabled: true
+        
       - name: brave
         disabled: false
-        timeout: 15.0
-        weight: 1
+        timeout: 20.0
+        weight: 1.5
       
       - name: google
         disabled: false
-        timeout: 15.0
+        timeout: 20.0
         weight: 1
       
-      # Fallback
       - name: qwant
         disabled: false
-        timeout: 15.0
-        weight: 0.5
+        timeout: 20.0
+        weight: 1
       
       - name: startpage
         disabled: false
-        timeout: 15.0
+        timeout: 20.0
+        weight: 0.75
+      
+      - name: mojeek
+        disabled: false
+        timeout: 20.0
         weight: 0.5
 ---
 apiVersion: apps/v1
