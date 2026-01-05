@@ -67,6 +67,10 @@ spec:
               value: "true"
             - name: RAG_EMBEDDING_OLLAMA_BASE_URL
               value: "http://ollama:11434"
+            - name: RAG_EMBEDDING_BATCH_SIZE
+              value: "100"
+            - name: OLLAMA_KEEP_ALIVE
+              value: "24h"
           resources:
             requests:
               memory: "2Gi"
