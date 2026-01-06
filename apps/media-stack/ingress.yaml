@@ -111,3 +111,9 @@ spec:
           - path: /
             pathType: Prefix
             backend: { service: { name: jellyfin, port: { number: 8096 } } }
+    - host: bazarr.lab.ghostlabz.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: bazarr, port: { number: 6767 } } }
