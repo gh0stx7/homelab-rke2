@@ -10,9 +10,3 @@ configMapGenerator:
 
 resources:
   - mover.yaml
-  - mover-secrets.yaml
-
-labels:
-  - includeSelectors: false
-    pairs:
-      managed-by: fleet

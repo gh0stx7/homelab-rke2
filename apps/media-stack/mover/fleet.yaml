@@ -1,9 +1,0 @@
-defaultNamespace: media
-
-labels:
-  app: mover
-  stack: media
-
-dependsOn:
-  - name: homelab-rke2-apps-media-stack
-  - name: homelab-rke2-infra-media-storage
