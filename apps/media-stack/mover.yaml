@@ -1,164 +1,8 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: media-mover-script
-data:
-  mover.sh: |
-    #!/bin/bash
-    HOT="/media/hot"
-    COLD="/media/cold"
-    
-    # --- CONFIGURATION ---
-    # Trigger archival when Hot storage exceeds this percentage
-    THRESHOLD_PERCENT=70
-    
-    # Target to reach after archival (to avoid constant churn)
-    TARGET_PERCENT=60
-    
-    # Minimum free space to maintain (in GB) - acts as a safety floor
-    MIN_FREE_GB=50
-    
-    # Grace period: Don't archive files newer than this many hours
-    # This protects recently downloaded content from immediate archival
-    GRACE_PERIOD_HOURS=72
-    
-    # --- PHASE 1: HYDRATION (Startup Only) ---
-    echo "[Mover] Starting Hydration: Backfilling links from Cold to Hot..."
-    
-    if [ -d "$COLD" ]; then
-      cd "$COLD" || exit 1
-      find . -type d -print0 | xargs -0 -I {} mkdir -p "$HOT/{}"
-      find . -type f -not -name ".*" | while read -r FILE; do
-         HOT_PATH="$HOT/$FILE"
-         COLD_PATH="$COLD/$FILE"
-         if [ ! -e "$HOT_PATH" ] && [ ! -L "$HOT_PATH" ]; then
-            ln -s "$COLD_PATH" "$HOT_PATH"
-         fi
-      done
-      echo "[Mover] Hydration Complete."
-    else
-      echo "[Mover] WARNING: Cold storage not found at $COLD. Skipping hydration."
-    fi
-
-    # --- HELPER FUNCTIONS ---
-    
-    get_usage_percent() {
-        df "$HOT" | awk 'NR==2 {gsub(/%/,"",$5); print $5}'
-    }
-    
-    get_free_gb() {
-        df -BG "$HOT" | awk 'NR==2 {gsub(/G/,"",$4); print $4}'
-    }
-    
-    get_total_gb() {
-        df -BG "$HOT" | awk 'NR==2 {gsub(/G/,"",$2); print $2}'
-    }
-    
-    calculate_space_to_free() {
-        local current_percent=$1
-        local target_percent=$2
-        local total_bytes=$(df -B1 "$HOT" | awk 'NR==2 {print $2}')
-        local space_to_free=$(( (current_percent - target_percent) * total_bytes / 100 ))
-        echo "$space_to_free"
-    }
-    
-    # --- PHASE 2: ARCHIVER (Infinite Loop) ---
-    echo "[Mover] Starting Smart Space-Based Archiver..."
-    echo "[Mover] Config:"
-    echo "[Mover]   - Threshold: ${THRESHOLD_PERCENT}% | Target: ${TARGET_PERCENT}%"
-    echo "[Mover]   - Min Free: ${MIN_FREE_GB}GB"
-    echo "[Mover]   - Grace Period: ${GRACE_PERIOD_HOURS}h (protects new downloads)"
-    
-    while true; do
-      CURRENT_PERCENT=$(get_usage_percent)
-      FREE_GB=$(get_free_gb)
-      TOTAL_GB=$(get_total_gb)
-    
-      echo "[Mover] Status: ${CURRENT_PERCENT}% used (${FREE_GB}GB free of ${TOTAL_GB}GB)"
-    
-      if [ "$CURRENT_PERCENT" -gt "$THRESHOLD_PERCENT" ] || [ "$FREE_GB" -lt "$MIN_FREE_GB" ]; then
-        echo "[Mover] ⚠️  Threshold exceeded! Starting archival..."
-    
-        SPACE_TO_FREE=$(calculate_space_to_free "$CURRENT_PERCENT" "$TARGET_PERCENT")
-        SPACE_FREED=0
-    
-        echo "[Mover] Target: Free $(( SPACE_TO_FREE / 1024 / 1024 / 1024 ))GB to reach ${TARGET_PERCENT}%"
-    
-        # Calculate grace period cutoff (in seconds since epoch)
-        GRACE_CUTOFF=$(( $(date +%s) - (GRACE_PERIOD_HOURS * 3600) ))
-    
-        # STRATEGY: Archive oldest files first based on CREATION (Birth) date on this disk.
-        # %B@ = Birth Time (Creation) - The most reliable "Download Date" metric.
-        find "$HOT" -type f ! -type l -printf '%B@ %s %p\n' 2>/dev/null | \
-        sort -n | \
-        while IFS=' ' read -r BIRTH SIZE FILE_PATH; do
-    
-          # Stop if we've freed enough space
-          if [ "$SPACE_FREED" -ge "$SPACE_TO_FREE" ]; then
-            echo "[Mover] ✓ Target reached. Freed $(( SPACE_FREED / 1024 / 1024 / 1024 ))GB"
-            break
-          fi
-    
-          # Convert timestamp to integer
-          BIRTH_INT=${BIRTH%.*}
-    
-          # Skip files within grace period (recently downloaded)
-          if [ "$BIRTH_INT" -gt "$GRACE_CUTOFF" ]; then
-            AGE_HOURS=$(( ($(date +%s) - BIRTH_INT) / 3600 ))
-            echo "[Mover] ⏭️  Skipping (too new - ${AGE_HOURS}h old): $(basename "$FILE_PATH")"
-            continue
-          fi
-    
-          # Calculate destination
-          DEST="${FILE_PATH/$HOT/$COLD}"
-          DEST_DIR="$(dirname "$DEST")"
-    
-          # Skip if already on cold
-          if [ -f "$DEST" ]; then
-            continue
-          fi
-    
-          # Ensure destination folder exists
-          mkdir -p "$DEST_DIR"
-    
-          FILE_SIZE=$(stat -c%s "$FILE_PATH" 2>/dev/null || echo "0")
-    
-          # Calculate age in days for logging
-          AGE_DAYS=$(( ($(date +%s) - MTIME_INT) / 86400 ))
-    
-          # Move file and create symlink
-          if mv "$FILE_PATH" "$DEST" 2>/dev/null; then
-            if ln -s "$DEST" "$FILE_PATH" 2>/dev/null; then
-              SPACE_FREED=$(( SPACE_FREED + FILE_SIZE ))
-              SIZE_MB=$(( FILE_SIZE / 1024 / 1024 ))
-              echo "[Archive] ✓ ${SIZE_MB}MB (${AGE_DAYS}d old): $(basename "$FILE_PATH")"
-            else
-              echo "[Archive] ✗ Failed symlink, rolling back: $FILE_PATH"
-              mv "$DEST" "$FILE_PATH" 2>/dev/null
-            fi
-          else
-            echo "[Archive] ✗ Failed to move: $FILE_PATH"
-          fi
-    
-        done
-    
-        FINAL_PERCENT=$(get_usage_percent)
-        FINAL_FREE=$(get_free_gb)
-        echo "[Mover] Archival complete. New usage: ${FINAL_PERCENT}% (${FINAL_FREE}GB free)"
-    
-      else
-        echo "[Mover] ✓ Storage healthy. No action needed."
-      fi
-    
-      echo "[Mover] Sleeping 5 minutes..."
-      sleep 300
-    done
-
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: media-mover
+  namespace: media
 spec:
   replicas: 1
   selector:
@@ -182,7 +26,33 @@ spec:
           command:
             - "/bin/sh"
             - "-c"
-            - "apk add --no-cache bash findutils coreutils && /bin/bash /scripts/mover.sh"
+            - "apk add --no-cache bash findutils coreutils curl jq && /bin/bash /scripts/mover.sh"
+          env:
+            # API Keys from secret
+            - name: RADARR_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: media-api-keys
+                  key: radarr-api-key
+            - name: SONARR_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: media-api-keys
+                  key: sonarr-api-key
+            # Optional: Override defaults
+            - name: THRESHOLD_PERCENT
+              value: "80"
+            - name: TARGET_PERCENT
+              value: "70"
+            - name: MIN_FREE_GB
+              value: "50"
+            # Operational modes (for testing)
+            - name: DRY_RUN
+              value: "true"
+            - name: MAX_FILES
+              value: "5"
+            # - name: DRAIN_MODE
+            #   value: "false"
           volumeMounts:
             - { name: script, mountPath: /scripts }
             - { name: hot, mountPath: /media/hot }
@@ -190,7 +60,7 @@ spec:
           resources:
             requests:
               cpu: "100m"
-              memory: "128Mi"
+              memory: "256Mi"
       volumes:
         - name: script
           configMap: { name: media-mover-script, defaultMode: 0755 }
