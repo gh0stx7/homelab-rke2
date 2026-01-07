@@ -168,5 +168,5 @@ cleanUpCRDs: false  # Don't delete CRDs on uninstall
 
 kubectl:
   image:
-    repository: registry.k8s.io/kubectl
-    tag: "v1.34.1"
+    repository: docker.io/bitnami/kubectl
+    tag: "1.31"
