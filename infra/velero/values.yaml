@@ -41,30 +41,30 @@ configuration:
   defaultBackupTTL: 720h
   logLevel: info
 
-backupStorageLocation:
-  - name: default
-    provider: aws
-    bucket: velero-backups
-    default: true
-    credential:
-      name: velero-s3-credentials
-      key: cloud
-    config:
-      # Garage S3 endpoint configuration
-      region: garage
-      s3ForcePathStyle: "true"
-      s3Url: https://unraid.homelab.local:3901
-      insecureSkipTLSVerify: "true"
-      checksumAlgorithm: ""
+  backupStorageLocation:
+    - name: default
+      provider: aws
+      bucket: velero-backups
+      default: true
+      credential:
+        name: velero-s3-credentials
+        key: cloud
+      config:
+        # Garage S3 endpoint configuration
+        region: garage
+        s3ForcePathStyle: "true"
+        s3Url: https://unraid.homelab.local:3901
+        insecureSkipTLSVerify: "true"
+        checksumAlgorithm: ""
 
-volumeSnapshotLocation:
-  - name: default
-    provider: aws
-    credential:
-      name: velero-s3-credentials
-      key: cloud
-    config:
-      region: garage
+  volumeSnapshotLocation:
+    - name: default
+      provider: aws
+      credential:
+        name: velero-s3-credentials
+        key: cloud
+      config:
+        region: garage
 
 # =============================================================================
 # CREDENTIALS - LOADED FROM SEALED SECRET
