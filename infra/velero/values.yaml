@@ -1,0 +1,182 @@
+# =============================================================================
+# VELERO CONFIGURATION - DISASTER RECOVERY FOR HOMELAB RKE2 CLUSTER
+# =============================================================================
+# Backup Target: Garage S3 on Unraid NAS (https://unraid.homelab.local:3901)
+# Storage: Longhorn volumes backed up via CSI snapshots + data mover
+# Scope: Full cluster backup for complete disaster recovery
+# =============================================================================
+
+# Image configuration - Use latest Velero v1.17.1
+image:
+  repository: velero/velero
+  tag: v1.17.1
+  pullPolicy: IfNotPresent
+
+# =============================================================================
+# INIT CONTAINERS - AWS PLUGIN v1.13.0 FOR S3 COMPATIBILITY
+# =============================================================================
+# Using AWS plugin v1.13.0 (latest) with checksumAlgorithm="" workaround
+# The empty checksumAlgorithm disables AWS SDK v2 checksum headers that
+# break compatibility with S3-compatible providers like Garage
+# See: https://github.com/vmware-tanzu/velero/issues/8265
+initContainers:
+  - name: velero-plugin-for-aws
+    image: velero/velero-plugin-for-aws:v1.13.1
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+      - mountPath: /target
+        name: plugins
+
+# =============================================================================
+# BACKUP STORAGE LOCATION - GARAGE S3 ON UNRAID
+# =============================================================================
+configuration:
+  # Enable CSI snapshot support for Longhorn volumes
+  features: EnableCSI
+
+  # S3-compatible provider (Garage)
+  provider: aws
+
+  # Backup storage location configuration
+  backupStorageLocation:
+    - name: default
+      provider: aws
+      bucket: velero-backups
+      default: true
+      config:
+        # Garage S3 endpoint
+        region: garage  # Arbitrary region name for S3-compatible storage
+        s3ForcePathStyle: "true"
+        s3Url: https://unraid.homelab.local:3901
+        insecureSkipTLSVerify: "true"
+
+        # CRITICAL for Garage/S3-compatible storage compatibility
+        # Empty string disables AWS SDK v2 checksum headers that break compatibility
+        checksumAlgorithm: ""
+
+        # Optional: Increase timeout for large backups over network
+        # timeout: "5m"
+
+  # Volume snapshot location (same S3 bucket, different prefix)
+  volumeSnapshotLocation:
+    - name: default
+      provider: aws
+      config:
+        region: garage
+
+  # Default backup settings
+  defaultBackupStorageLocation: default
+  defaultVolumeSnapshotLocations: garage:default
+
+  # Backup TTL (720h = 30 days)
+  defaultBackupTTL: 720h
+
+  # Log level
+  logLevel: info
+
+  # Namespace to exclude from backups (optional)
+  # excludeNamespaces: []
+
+# =============================================================================
+# CREDENTIALS - LOADED FROM SEALED SECRET
+# =============================================================================
+credentials:
+  # Use existing secret created by sealed-secrets
+  useSecret: true
+  existingSecret: velero-s3-credentials
+  # Secret key containing AWS credentials file format
+  # [default]
+  # aws_access_key_id=<key>
+  # aws_secret_access_key=<secret>
+
+# =============================================================================
+# SNAPSHOTS - CSI INTEGRATION FOR LONGHORN
+# =============================================================================
+snapshotsEnabled: true
+
+# Deploy CSI snapshot controller (if not already present)
+deployNodeAgent: true
+
+# =============================================================================
+# NODE AGENT (formerly Restic) - FILE-LEVEL BACKUP
+# =============================================================================
+# Node agent provides file-level backup for:
+# - Volumes that don't support CSI snapshots
+# - Data mover functionality (uploads CSI snapshots to S3)
+nodeAgent:
+  # Deploy as DaemonSet on all nodes
+  podVolumePath: /var/lib/kubelet/pods
+  privileged: true  # Required for accessing pod volumes
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+  # Tolerations to run on all nodes
+  tolerations:
+    - operator: Exists
+
+# =============================================================================
+# VELERO SERVER RESOURCES
+# =============================================================================
+resources:
+  requests:
+    cpu: 500m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+# =============================================================================
+# SCHEDULING
+# =============================================================================
+# Schedule automatic backups (created separately in backup-schedules.yaml)
+schedules: {}
+
+# =============================================================================
+# METRICS & MONITORING
+# =============================================================================
+metrics:
+  enabled: false
+  scrapeInterval: 30s
+  scrapeTimeout: 10s
+
+  # Enable ServiceMonitor for Prometheus Operator (if installed)
+  serviceMonitor:
+    enabled: false  # Set to true if using Prometheus Operator
+
+# =============================================================================
+# RBAC
+# =============================================================================
+rbac:
+  create: true
+  clusterAdministrator: true
+
+serviceAccount:
+  server:
+    create: true
+    name: velero
+
+# =============================================================================
+# SECURITY
+# =============================================================================
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 999
+  fsGroup: 999
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+
+# =============================================================================
+# CLEANUP
+# =============================================================================
+cleanUpCRDs: false  # Don't delete CRDs on uninstall

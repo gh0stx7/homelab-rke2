@@ -1,0 +1,65 @@
+---
+# -----------------------------------------------------------------------------
+# DAILY: Full Cluster Backup
+# -----------------------------------------------------------------------------
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-full
+  namespace: velero
+spec:
+  # Daily at 2:00 AM
+  schedule: "0 2 * * *"
+
+  template:
+    # Exclude unnecessary resources
+    excludedResources:
+      - events
+      - events.events.k8s.io
+
+    # Snapshot volumes
+    snapshotVolumes: true
+    defaultVolumesToFsBackup: false
+    snapshotMoveData: true
+
+    # Backup TTL (keep for 14 days)
+    ttl: 336h
+
+    # Storage location
+    storageLocation: default
+    volumeSnapshotLocations:
+      - default
+
+    # Include cluster-scoped resources
+    includeClusterResources: true
+
+---
+# -----------------------------------------------------------------------------
+# WEEKLY: Long-term Retention (Keep for 90 days)
+# -----------------------------------------------------------------------------
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: weekly-longterm
+  namespace: velero
+spec:
+  # Every Sunday at 3:00 AM
+  schedule: "0 3 * * 0"
+
+  template:
+    excludedResources:
+      - events
+      - events.events.k8s.io
+
+    snapshotVolumes: true
+    defaultVolumesToFsBackup: false
+    snapshotMoveData: true
+
+    # Backup TTL (keep for 60 days)
+    ttl: 1440h
+
+    storageLocation: default
+    volumeSnapshotLocations:
+      - default
+
+    includeClusterResources: true

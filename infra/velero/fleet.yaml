@@ -1,0 +1,22 @@
+defaultNamespace: velero
+
+# Velero - Kubernetes Backup and Disaster Recovery
+# Backs up cluster resources and PersistentVolumes to S3-compatible storage (Garage)
+
+helm:
+  repo: https://vmware-tanzu.github.io/helm-charts
+  chart: velero
+  version: 11.3.2
+  releaseName: velero
+  waitForJobs: true
+
+  valuesFiles:
+    - values.yaml
+
+labels:
+  role: backup
+  component: velero
+
+dependsOn:
+  - name: homelab-rke2-infra-namespaces
+  - name: homelab-rke2-infra-sealed-secrets
