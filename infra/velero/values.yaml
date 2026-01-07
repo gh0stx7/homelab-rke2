@@ -34,60 +34,45 @@ configuration:
   # Enable CSI snapshot support for Longhorn volumes
   features: EnableCSI
 
-  # S3-compatible provider (Garage)
-  provider: aws
-
-  # Backup storage location configuration
-  backupStorageLocation:
-    - name: default
-      provider: aws
-      bucket: velero-backups
-      default: true
-      config:
-        # Garage S3 endpoint
-        region: garage  # Arbitrary region name for S3-compatible storage
-        s3ForcePathStyle: "true"
-        s3Url: https://unraid.homelab.local:3901
-        insecureSkipTLSVerify: "true"
-
-        # CRITICAL for Garage/S3-compatible storage compatibility
-        # Empty string disables AWS SDK v2 checksum headers that break compatibility
-        checksumAlgorithm: ""
-
-        # Optional: Increase timeout for large backups over network
-        # timeout: "5m"
-
-  # Volume snapshot location (same S3 bucket, different prefix)
-  volumeSnapshotLocation:
-    - name: default
-      provider: aws
-      config:
-        region: garage
-
-  # Default backup settings
   defaultBackupStorageLocation: default
-  defaultVolumeSnapshotLocations: garage:default
+  defaultVolumeSnapshotLocations: aws:default
 
   # Backup TTL (720h = 30 days)
   defaultBackupTTL: 720h
-
-  # Log level
   logLevel: info
 
-  # Namespace to exclude from backups (optional)
-  # excludeNamespaces: []
+backupStorageLocation:
+  - name: default
+    provider: aws
+    bucket: velero-backups
+    default: true
+    credential:
+      name: velero-s3-credentials
+      key: cloud
+    config:
+      # Garage S3 endpoint configuration
+      region: garage
+      s3ForcePathStyle: "true"
+      s3Url: https://unraid.homelab.local:3901
+      insecureSkipTLSVerify: "true"
+      checksumAlgorithm: ""
+
+volumeSnapshotLocation:
+  - name: default
+    provider: aws
+    credential:
+      name: velero-s3-credentials
+      key: cloud
+    config:
+      region: garage
 
 # =============================================================================
 # CREDENTIALS - LOADED FROM SEALED SECRET
 # =============================================================================
 credentials:
-  # Use existing secret created by sealed-secrets
   useSecret: true
   existingSecret: velero-s3-credentials
-  # Secret key containing AWS credentials file format
-  # [default]
-  # aws_access_key_id=<key>
-  # aws_secret_access_key=<secret>
+  secretContents: {}
 
 # =============================================================================
 # SNAPSHOTS - CSI INTEGRATION FOR LONGHORN
