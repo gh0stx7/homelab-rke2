@@ -165,3 +165,8 @@ containerSecurityContext:
 # CLEANUP
 # =============================================================================
 cleanUpCRDs: false  # Don't delete CRDs on uninstall
+
+kubectl:
+  image:
+    repository: registry.k8s.io/kubectl
+    tag: "v1.34.1"
