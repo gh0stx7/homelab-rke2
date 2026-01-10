@@ -41,6 +41,35 @@ data:
     }
 
     # ============================================================================
+    # DATE PARSING (Alpine/BusyBox compatible)
+    # ============================================================================
+    # Converts ISO 8601 date to Unix epoch
+    # Input: 2025-01-10T12:34:56Z or 2025-01-10T12:34:56.123456Z
+    # Output: Unix timestamp (seconds since 1970-01-01)
+    iso_to_epoch() {
+        local iso_date="$1"
+
+        # Remove milliseconds if present (e.g., .123456)
+        iso_date="${iso_date%.*}"
+
+        # Remove 'Z' timezone indicator
+        iso_date="${iso_date%Z}"
+
+        # Parse the date components
+        local year month day hour minute second
+        year="${iso_date:0:4}"
+        month="${iso_date:5:2}"
+        day="${iso_date:8:2}"
+        hour="${iso_date:11:2}"
+        minute="${iso_date:14:2}"
+        second="${iso_date:17:2}"
+
+        # Use date command with explicit format (BusyBox compatible)
+        # Format: YYYY-MM-DD HH:MM:SS
+        date -u -d "${year}-${month}-${day} ${hour}:${minute}:${second}" +%s 2>/dev/null || echo "0"
+    }
+
+    # ============================================================================
     # PHASE 1: HYDRATION
     # ============================================================================
     hydrate_symlinks() {
@@ -114,7 +143,8 @@ data:
         COUNT=$(echo "$RESPONSE" | jq -r 'length' 2>/dev/null)
         echo "[Query] Found ${COUNT} movie files" >&2
 
-        echo "$RESPONSE" | jq -r '.[] | "\(.dateAdded)|\(.path)|\(.size)"' 2>/dev/null | sort
+        # Output format: dateAdded|path|size
+        echo "$RESPONSE" | jq -r '.[] | "\(.dateAdded)|\(.path)|\(.size)"' 2>/dev/null
     }
 
     get_episodes_by_age() {
@@ -133,10 +163,17 @@ data:
         SERIES_COUNT=$(echo "$SERIES_IDS" | wc -l)
         echo "[Query] Found ${SERIES_COUNT} series, fetching episode files..." >&2
 
+        # Collect all episode files
+        local ALL_EPISODES=""
         while read -r SERIES_ID; do
-            curl -s "${SONARR_API}/episodefile?seriesId=${SERIES_ID}" \
-              -H "X-Api-Key: ${SONARR_KEY}" 2>/dev/null
-        done <<< "$SERIES_IDS" | jq -s 'add // [] | .[] | "\(.dateAdded)|\(.path)|\(.size)"' 2>/dev/null | sort
+            local EPISODES
+            EPISODES=$(curl -s "${SONARR_API}/episodefile?seriesId=${SERIES_ID}" \
+              -H "X-Api-Key: ${SONARR_KEY}" 2>/dev/null)
+            ALL_EPISODES="${ALL_EPISODES}${EPISODES}"
+        done <<< "$SERIES_IDS"
+
+        # Output format: dateAdded|path|size
+        echo "$ALL_EPISODES" | jq -s 'add // [] | .[] | "\(.dateAdded)|\(.path)|\(.size)"' 2>/dev/null
     }
 
     # ============================================================================
@@ -144,8 +181,8 @@ data:
     # ============================================================================
 
     archive_file() {
-        local FILE_PATH="$1"
-        local DATE_ADDED="$2"
+        local DATE_ADDED="$1"
+        local FILE_PATH="$2"
         local FILE_SIZE="$3"
 
         # Skip if not on hot storage
@@ -170,16 +207,20 @@ data:
             return 1
         fi
 
-        # Calculate age
+        # Calculate age (using our Alpine-compatible function)
         local NOW
         NOW=$(date +%s)
         local ADDED_EPOCH
-        ADDED_EPOCH=$(date -d "$DATE_ADDED" +%s 2>/dev/null || echo "$NOW")
+        ADDED_EPOCH=$(iso_to_epoch "$DATE_ADDED")
+
+        # Fallback to current time if parsing failed
+        [ "$ADDED_EPOCH" = "0" ] && ADDED_EPOCH="$NOW"
+
         local AGE_DAYS=$(( (NOW - ADDED_EPOCH) / 86400 ))
 
-        # Calculate size in GB
+        # Calculate size in GB (fixed quoting)
         local SIZE_GB
-        SIZE_GB=$(awk "BEGIN {printf \"%.2f\", $FILE_SIZE/1024/1024/1024}")
+        SIZE_GB=$(echo "$FILE_SIZE" | awk '{printf "%.2f", $1/1024/1024/1024}')
 
         # Show what we would do
         if [ "$DRY_RUN" = "true" ]; then
@@ -271,7 +312,10 @@ data:
             echo ""
 
             # Combine movies and episodes, sorted by date (oldest first)
-            while IFS='|' read -r TYPE DATE_ADDED FILE_PATH FILE_SIZE; do
+            # Format after sort: dateAdded|path|size
+            while IFS='|' read -r DATE_ADDED FILE_PATH FILE_SIZE; do
+                # Skip empty lines
+                [ -z "$DATE_ADDED" ] && continue
 
                 # Check MAX_FILES limit
                 if [ "$MAX_FILES" -gt 0 ] && [ "$FILES_ARCHIVED" -ge "$MAX_FILES" ]; then
@@ -285,17 +329,17 @@ data:
                     break
                 fi
 
-                # Archive the file
-                if archive_file "$FILE_PATH" "$DATE_ADDED" "$FILE_SIZE"; then
+                # Archive the file (note: parameters reordered to match function signature)
+                if archive_file "$DATE_ADDED" "$FILE_PATH" "$FILE_SIZE"; then
                     SPACE_FREED=$(( SPACE_FREED + FILE_SIZE ))
                     FILES_ARCHIVED=$(( FILES_ARCHIVED + 1 ))
                 fi
             done < <({
-                get_movies_by_age 2>&1 | grep -v "^\[" | sed 's/^/movie|/'
-                get_episodes_by_age 2>&1 | grep -v "^\[" | sed 's/^/episode|/'
-            } | sort -t'|' -k2)
+                get_movies_by_age 2>&1 | grep -v "^\[" 
+                get_episodes_by_age 2>&1 | grep -v "^\[" 
+            } | sort -t'|' -k1)
 
-            FREED_GB=$(awk "BEGIN {printf \"%.2f\", $SPACE_FREED/1024/1024/1024}")
+            FREED_GB=$(echo "$SPACE_FREED" | awk '{printf "%.2f", $1/1024/1024/1024}')
             echo ""
             echo "[Mover] ✓ Archival complete"
             echo "[Mover]   - Files archived: ${FILES_ARCHIVED}"
@@ -364,7 +408,7 @@ spec:
             - name: THRESHOLD_PERCENT
               value: "40"
             - name: TARGET_PERCENT
-              value: "40"
+              value: "30"
             - name: MIN_FREE_GB
               value: "50"
             # Operational modes (for testing)
