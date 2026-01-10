@@ -12,7 +12,7 @@ metadata:
     velero.io/csi-volumesnapshot-class: "true"
   annotations:
     snapshot.storage.kubernetes.io/is-default-class: "true"
-driver: driver.longhorn.io
+driver: driver.harvesterhci.io
 deletionPolicy: Delete
 parameters:
   # 'snap' creates in-cluster snapshots (fast, local)
