@@ -362,9 +362,9 @@ spec:
                   key: sonarr-api-key
             # Optional: Override defaults
             - name: THRESHOLD_PERCENT
-              value: "80"
+              value: "40"
             - name: TARGET_PERCENT
-              value: "70"
+              value: "40"
             - name: MIN_FREE_GB
               value: "50"
             # Operational modes (for testing)
