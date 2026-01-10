@@ -6,6 +6,8 @@
 # Scope: Full cluster backup for complete disaster recovery
 # =============================================================================
 
+upgradeCRDs: false
+
 # Image configuration - Use latest Velero v1.17.1
 image:
   repository: velero/velero
