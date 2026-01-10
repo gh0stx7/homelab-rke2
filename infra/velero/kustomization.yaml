@@ -4,7 +4,7 @@ kind: Kustomization
 namespace: velero
 
 resources:
-  - velero-sealed-secret.yaml
+  - velero-sealed-secrets.yaml
   - volumesnapshotclass.yaml
   - backup-schedules.yaml
 
