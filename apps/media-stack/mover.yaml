@@ -8,9 +8,9 @@ data:
     HOT="/media/hot"
     COLD="/media/cold"
 
-    THRESHOLD_PERCENT=80
-    TARGET_PERCENT=70
-    MIN_FREE_GB=50
+    THRESHOLD_PERCENT="${THRESHOLD_PERCENT:-80}"
+    TARGET_PERCENT="${TARGET_PERCENT:-70}"
+    MIN_FREE_GB="${MIN_FREE_GB:-50}"
 
     RADARR_API="http://radarr:7878/api/v3"
     SONARR_API="http://sonarr:8989/api/v3"
