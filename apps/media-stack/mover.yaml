@@ -396,16 +396,16 @@ spec:
                   key: sonarr-api-key
             # Optional: Override defaults
             - name: THRESHOLD_PERCENT
-              value: "40"
+              value: "50"
             - name: TARGET_PERCENT
-              value: "30"
+              value: "40"
             - name: MIN_FREE_GB
               value: "50"
             # Operational modes (for testing)
             - name: DRY_RUN
-              value: "true"
+              value: "false"
             - name: MAX_FILES
-              value: "5"
+              value: "0"
             # - name: DRAIN_MODE
             #   value: "false"
           volumeMounts:
