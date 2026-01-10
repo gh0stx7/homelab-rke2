@@ -17,13 +17,11 @@ data:
     RADARR_KEY="${RADARR_API_KEY}"
     SONARR_KEY="${SONARR_API_KEY}"
 
-    # ============================================================================
-    # OPERATIONAL MODES (controlled via env vars)
-    # ============================================================================
-    DRY_RUN="${DRY_RUN:-false}"           # Set to "true" to preview without moving
-    MAX_FILES="${MAX_FILES:-0}"            # Set to number to limit files moved (0 = unlimited)
-    DRAIN_MODE="${DRAIN_MODE:-false}"      # Set to "true" to archive EVERYTHING
-    SKIP_HYDRATION="${SKIP_HYDRATION:-false}"  # Set to "true" to skip hydration phase
+    # Operational Modes
+    DRY_RUN="${DRY_RUN:-false}"
+    MAX_FILES="${MAX_FILES:-0}"
+    DRAIN_MODE="${DRAIN_MODE:-false}"
+    SKIP_HYDRATION="${SKIP_HYDRATION:-false}"
 
     get_usage_percent() { df "$HOT" | awk 'NR==2 {gsub(/%/,"",$5); print $5}'; }
     get_free_gb() { df -BG "$HOT" | awk 'NR==2 {gsub(/G/,"",$4); print $4}'; }
@@ -34,28 +32,17 @@ data:
         local total_bytes
         total_bytes=$(df -B1 "$HOT" | awk 'NR==2 {print $2}')
         if [ "$current" -gt "$target" ]; then
-            echo $(( (current - target) * total_bytes / 100 ))
+            # Use awk for large number math to avoid Bash 32-bit/64-bit integer overflows
+            awk -v cur="$current" -v tar="$target" -v tot="$total_bytes" 'BEGIN {print int((cur - tar) * tot / 100)}'
         else
             echo "0"
         fi
     }
 
-    # ============================================================================
-    # DATE PARSING (Alpine/BusyBox compatible)
-    # ============================================================================
-    # Converts ISO 8601 date to Unix epoch
-    # Input: 2025-01-10T12:34:56Z or 2025-01-10T12:34:56.123456Z
-    # Output: Unix timestamp (seconds since 1970-01-01)
     iso_to_epoch() {
         local iso_date="$1"
-
-        # Remove milliseconds if present (e.g., .123456)
         iso_date="${iso_date%.*}"
-
-        # Remove 'Z' timezone indicator
         iso_date="${iso_date%Z}"
-
-        # Parse the date components
         local year month day hour minute second
         year="${iso_date:0:4}"
         month="${iso_date:5:2}"
@@ -63,304 +50,120 @@ data:
         hour="${iso_date:11:2}"
         minute="${iso_date:14:2}"
         second="${iso_date:17:2}"
-
-        # Use date command with explicit format (BusyBox compatible)
-        # Format: YYYY-MM-DD HH:MM:SS
         date -u -d "${year}-${month}-${day} ${hour}:${minute}:${second}" +%s 2>/dev/null || echo "0"
     }
 
-    # ============================================================================
-    # PHASE 1: HYDRATION
-    # ============================================================================
     hydrate_symlinks() {
-        if [ "$SKIP_HYDRATION" = "true" ]; then
-            echo "[Hydration] Skipped (SKIP_HYDRATION=true)"
-            return
-        fi
-
-        echo "=================================================="
-        echo "[Hydration] Starting symlink restoration..."
-        echo "=================================================="
-
-        if [ ! -d "$COLD" ]; then
-            echo "[Hydration] ✗ Cold storage not found at $COLD"
-            return 1
-        fi
-
-        local SYMLINKS_CREATED=0
-        local CONFLICTS_FOUND=0
-
-        echo "[Hydration] Creating directory structure..."
+        if [ "$SKIP_HYDRATION" = "true" ]; then return; fi
+        echo "[Hydration] Restoring symlinks..."
+        [ ! -d "$COLD" ] && return 1
         cd "$COLD" || return 1
         find . -type d -print0 | xargs -0 -I {} mkdir -p "$HOT/{}"
-
-        echo "[Hydration] Creating symlinks for archived files..."
         while IFS= read -r FILE; do
             HOT_PATH="$HOT/$FILE"
             COLD_PATH="$COLD/$FILE"
-
-            if [ -f "$HOT_PATH" ] && [ ! -L "$HOT_PATH" ]; then
-                echo "[Hydration] ⚠️  Conflict: Real file exists on hot: $FILE"
-                CONFLICTS_FOUND=$(( CONFLICTS_FOUND + 1 ))
-                continue
-            fi
-
+            [ -f "$HOT_PATH" ] && [ ! -L "$HOT_PATH" ] && continue
             if [ -L "$HOT_PATH" ]; then
-                CURRENT_TARGET=$(readlink "$HOT_PATH")
-                [ "$CURRENT_TARGET" = "$COLD_PATH" ] && continue
+                [ "$(readlink "$HOT_PATH")" = "$COLD_PATH" ] && continue
                 rm "$HOT_PATH"
             fi
-
-            if ln -s "$COLD_PATH" "$HOT_PATH" 2>/dev/null; then
-                SYMLINKS_CREATED=$(( SYMLINKS_CREATED + 1 ))
-            fi
+            ln -s "$COLD_PATH" "$HOT_PATH" 2>/dev/null
         done < <(find . -type f -not -name ".*")
-
-        echo ""
-        echo "[Hydration] ✓ Complete"
-        echo "[Hydration]   - Symlinks created: ${SYMLINKS_CREATED}"
-        [ "$CONFLICTS_FOUND" -gt 0 ] && echo "[Hydration]   - Conflicts: ${CONFLICTS_FOUND}"
-        echo "=================================================="
-        echo ""
     }
 
-    # ============================================================================
-    # PHASE 2: API QUERIES
-    # ============================================================================
-
     get_movies_by_age() {
-        echo "[Query] Fetching movies from Radarr..." >&2
-
-        local RESPONSE
-        RESPONSE=$(curl -s "${RADARR_API}/moviefile" -H "X-Api-Key: ${RADARR_KEY}" 2>/dev/null)
-
-        if [ -z "$RESPONSE" ] || [ "$RESPONSE" = "[]" ]; then
-            echo "[Warning] No movies found in Radarr" >&2
-            return
-        fi
-
-        local COUNT
-        COUNT=$(echo "$RESPONSE" | jq -r 'length' 2>/dev/null)
-        echo "[Query] Found ${COUNT} movie files" >&2
-
-        # Output format: dateAdded|path|size
-        echo "$RESPONSE" | jq -r '.[] | "\(.dateAdded)|\(.path)|\(.size)"' 2>/dev/null
+        # Added tr -d to strip quotes and carriage returns from API response
+        curl -s "${RADARR_API}/moviefile" -H "X-Api-Key: ${RADARR_KEY}" | \
+        jq -r '.[] | "\(.dateAdded)|\(.path)|\(.size)"' | tr -d '\r"'
     }
 
     get_episodes_by_age() {
-        echo "[Query] Fetching episodes from Sonarr..." >&2
-
         local SERIES_IDS
-        SERIES_IDS=$(curl -s "${SONARR_API}/series" -H "X-Api-Key: ${SONARR_KEY}" 2>/dev/null | \
-                          jq -r '.[].id' 2>/dev/null)
-
-        if [ -z "$SERIES_IDS" ]; then
-            echo "[Warning] No series found in Sonarr" >&2
-            return
-        fi
-
-        local SERIES_COUNT
-        SERIES_COUNT=$(echo "$SERIES_IDS" | wc -l)
-        echo "[Query] Found ${SERIES_COUNT} series, fetching episode files..." >&2
-
-        # Collect all episode files
-        local ALL_EPISODES=""
-        while read -r SERIES_ID; do
-            local EPISODES
-            EPISODES=$(curl -s "${SONARR_API}/episodefile?seriesId=${SERIES_ID}" \
-              -H "X-Api-Key: ${SONARR_KEY}" 2>/dev/null)
-            ALL_EPISODES="${ALL_EPISODES}${EPISODES}"
-        done <<< "$SERIES_IDS"
-
-        # Output format: dateAdded|path|size
-        echo "$ALL_EPISODES" | jq -s 'add // [] | .[] | "\(.dateAdded)|\(.path)|\(.size)"' 2>/dev/null
+        SERIES_IDS=$(curl -s "${SONARR_API}/series" -H "X-Api-Key: ${SONARR_KEY}" | jq -r '.[].id')
+        for ID in $SERIES_IDS; do
+            curl -s "${SONARR_API}/episodefile?seriesId=${ID}" -H "X-Api-Key: ${SONARR_KEY}" | \
+            jq -r '.[] | "\(.dateAdded)|\(.path)|\(.size)"' | tr -d '\r"'
+        done
     }
-
-    # ============================================================================
-    # PHASE 3: ARCHIVAL
-    # ============================================================================
 
     archive_file() {
         local DATE_ADDED="$1"
         local FILE_PATH="$2"
         local FILE_SIZE="$3"
 
-        # Skip if not on hot storage
         [[ "$FILE_PATH" != "$HOT"* ]] && return 1
-
-        # Skip symlinks (already archived)
         [ -L "$FILE_PATH" ] && return 1
-
-        # Skip if file doesn't exist
         [ ! -f "$FILE_PATH" ] && return 1
 
         local DEST="${FILE_PATH/$HOT/$COLD}"
-        local DEST_DIR
-        DEST_DIR="$(dirname "$DEST")"
-
-        # Skip if already on cold storage
         if [ -f "$DEST" ]; then
-            echo "[Cleanup] File exists on cold, creating symlink: $(basename "$FILE_PATH")" >&2
-            if [ "$DRY_RUN" = "false" ]; then
-                rm -f "$FILE_PATH" && ln -s "$DEST" "$FILE_PATH"
-            fi
+            [ "$DRY_RUN" = "false" ] && rm -f "$FILE_PATH" && ln -s "$DEST" "$FILE_PATH"
             return 1
         fi
 
-        # Calculate age (using our Alpine-compatible function)
-        local NOW
-        NOW=$(date +%s)
-        local ADDED_EPOCH
-        ADDED_EPOCH=$(iso_to_epoch "$DATE_ADDED")
-
-        # Fallback to current time if parsing failed
+        local NOW=$(date +%s)
+        local ADDED_EPOCH=$(iso_to_epoch "$DATE_ADDED")
         [ "$ADDED_EPOCH" = "0" ] && ADDED_EPOCH="$NOW"
-
         local AGE_DAYS=$(( (NOW - ADDED_EPOCH) / 86400 ))
+        local SIZE_GB=$(awk -v s="$FILE_SIZE" 'BEGIN {printf "%.2f", s/1073741824}')
 
-        # Calculate size in GB (fixed quoting)
-        local SIZE_GB
-        SIZE_GB=$(echo "$FILE_SIZE" | awk '{printf "%.2f", $1/1024/1024/1024}')
-
-        # Show what we would do
         if [ "$DRY_RUN" = "true" ]; then
-            echo "[DRY-RUN] Would archive: ${SIZE_GB}GB | ${AGE_DAYS}d old | $(basename "$FILE_PATH")"
+            echo "[DRY-RUN] Would archive: ${SIZE_GB}GB | ${AGE_DAYS}d | $(basename "$FILE_PATH")"
             return 0
         fi
 
-        # Actually perform the archive
-        mkdir -p "$DEST_DIR"
-
-        if mv "$FILE_PATH" "$DEST" 2>/dev/null; then
-            if ln -s "$DEST" "$FILE_PATH" 2>/dev/null; then
-                echo "[Archive] ✓ ${SIZE_GB}GB | ${AGE_DAYS}d old | $(basename "$FILE_PATH")"
-                return 0
-            else
-                echo "[Archive] ✗ Symlink failed, reverting..." >&2
-                mv "$DEST" "$FILE_PATH" 2>/dev/null
-                return 1
-            fi
-        else
-            echo "[Archive] ✗ Move failed: $(basename "$FILE_PATH")" >&2
-            return 1
+        mkdir -p "$(dirname "$DEST")"
+        if mv "$FILE_PATH" "$DEST"; then
+            ln -s "$DEST" "$FILE_PATH" && echo "[Archive] ✓ ${SIZE_GB}GB | $(basename "$FILE_PATH")"
+            return 0
         fi
+        return 1
     }
 
-    # ============================================================================
-    # MAIN
-    # ============================================================================
-
-    echo "=================================================="
-    echo "[Mover] Starting Radarr/Sonarr API-aware archiver"
-    echo "=================================================="
-    echo "[Config] Threshold: ${THRESHOLD_PERCENT}%"
-    echo "[Config] Target: ${TARGET_PERCENT}%"
-    echo "[Config] Min Free: ${MIN_FREE_GB}GB"
-    echo "[Config] Hot: $HOT"
-    echo "[Config] Cold: $COLD"
-    echo ""
-    echo "[Mode] DRY_RUN: ${DRY_RUN}"
-    echo "[Mode] MAX_FILES: ${MAX_FILES} (0 = unlimited)"
-    echo "[Mode] DRAIN_MODE: ${DRAIN_MODE}"
-    echo "[Mode] SKIP_HYDRATION: ${SKIP_HYDRATION}"
-    echo "=================================================="
-    echo ""
-
-    # Run hydration on startup (unless skipped)
+    # --- Main Execution ---
     hydrate_symlinks
 
-    # Determine if we should run once or loop
-    if [ "$DRAIN_MODE" = "true" ] || [ "$DRY_RUN" = "true" ] || [ "$MAX_FILES" -gt 0 ]; then
-        RUN_ONCE=true
-    else
-        RUN_ONCE=false
-    fi
-
-    # Main loop
-    LOOP_COUNT=0
     while true; do
-        LOOP_COUNT=$(( LOOP_COUNT + 1 ))
-
-        CURRENT_PERCENT=$(get_usage_percent)
+        CUR_PERC=$(get_usage_percent)
         FREE_GB=$(get_free_gb)
 
-        echo ""
-        echo "=================================================="
-        echo "[Status] $(date '+%Y-%m-%d %H:%M:%S')"
-        echo "[Status] Usage: ${CURRENT_PERCENT}% | Free: ${FREE_GB}GB"
-        echo "=================================================="
-
-        # Determine if we should archive
         SHOULD_ARCHIVE=false
-
         if [ "$DRAIN_MODE" = "true" ]; then
-            echo "[Mover] 🔥 DRAIN MODE: Archiving ALL files"
             SHOULD_ARCHIVE=true
-            SPACE_TO_FREE=999999999999999  # Effectively unlimited
-        elif [ "$CURRENT_PERCENT" -gt "$THRESHOLD_PERCENT" ] || [ "$FREE_GB" -lt "$MIN_FREE_GB" ]; then
-            echo "[Mover] ⚠️  Archival needed"
+            SPACE_TO_FREE=999999999999999
+        elif [ "$CUR_PERC" -gt "$THRESHOLD_PERCENT" ] || [ "$FREE_GB" -lt "$MIN_FREE_GB" ]; then
             SHOULD_ARCHIVE=true
-            SPACE_TO_FREE=$(calculate_space_needed "$CURRENT_PERCENT" "$TARGET_PERCENT")
-        else
-            echo "[Mover] ✓ Storage healthy - no action needed"
+            SPACE_TO_FREE=$(calculate_space_needed "$CUR_PERC" "$TARGET_PERCENT")
         fi
 
         if [ "$SHOULD_ARCHIVE" = "true" ]; then
             SPACE_FREED=0
             FILES_ARCHIVED=0
 
-            echo ""
+            # Use a temporary file to avoid pipe issues with large lists
+            TMP_LIST=$(mktemp)
+            { get_movies_by_age; get_episodes_by_age; } | sort -t'|' -k1 > "$TMP_LIST"
 
-            # Combine movies and episodes, sorted by date (oldest first)
-            # Format after sort: dateAdded|path|size
             while IFS='|' read -r DATE_ADDED FILE_PATH FILE_SIZE; do
-                # Skip empty lines
-                [ -z "$DATE_ADDED" ] && continue
+                [ -z "$FILE_PATH" ] && continue
 
-                # Check MAX_FILES limit
-                if [ "$MAX_FILES" -gt 0 ] && [ "$FILES_ARCHIVED" -ge "$MAX_FILES" ]; then
-                    echo "[Mover] MAX_FILES limit reached (${MAX_FILES}), stopping"
+                # Use awk for comparison to handle very large integers (bytes) safely
+                if [ "$DRAIN_MODE" = "false" ] && [ "$(awk -v sf="$SPACE_FREED" -v stf="$SPACE_TO_FREE" 'BEGIN {print (sf >= stf)}')" -eq 1 ]; then
                     break
                 fi
 
-                # Stop if we've freed enough space (unless in DRAIN_MODE)
-                if [ "$DRAIN_MODE" = "false" ] && [ "$SPACE_FREED" -ge "$SPACE_TO_FREE" ]; then
-                    echo "[Mover] Target reached, stopping archival"
-                    break
-                fi
-
-                # Archive the file (note: parameters reordered to match function signature)
                 if archive_file "$DATE_ADDED" "$FILE_PATH" "$FILE_SIZE"; then
-                    SPACE_FREED=$(( SPACE_FREED + FILE_SIZE ))
+                    # Safe addition
+                    SPACE_FREED=$(awk -v sf="$SPACE_FREED" -v fs="$FILE_SIZE" 'BEGIN {print sf + fs}')
                     FILES_ARCHIVED=$(( FILES_ARCHIVED + 1 ))
                 fi
-            done < <({
-                get_movies_by_age 2>&1 | grep -v "^\[" 
-                get_episodes_by_age 2>&1 | grep -v "^\[" 
-            } | sort -t'|' -k1)
 
-            FREED_GB=$(echo "$SPACE_FREED" | awk '{printf "%.2f", $1/1024/1024/1024}')
-            echo ""
-            echo "[Mover] ✓ Archival complete"
-            echo "[Mover]   - Files archived: ${FILES_ARCHIVED}"
-            echo "[Mover]   - Space freed: ${FREED_GB}GB"
-
-            if [ "$DRY_RUN" = "false" ]; then
-                NEW_PERCENT=$(get_usage_percent)
-                NEW_FREE=$(get_free_gb)
-                echo "[Mover]   - New usage: ${NEW_PERCENT}% (${NEW_FREE}GB free)"
-            fi
+                [ "$MAX_FILES" -gt 0 ] && [ "$FILES_ARCHIVED" -ge "$MAX_FILES" ] && break
+            done < "$TMP_LIST"
+            rm -f "$TMP_LIST"
         fi
 
-        # Exit if run-once mode
-        if [ "$RUN_ONCE" = "true" ]; then
-            echo ""
-            echo "[Mover] Run-once mode complete. Exiting."
-            exit 0
-        fi
-
-        echo ""
-        echo "[Mover] Next check in 5 minutes..."
+        [ "$DRY_RUN" = "true" ] || [ "$DRAIN_MODE" = "true" ] && exit 0
         sleep 300
     done
 ---
