@@ -91,19 +91,15 @@ deployNodeAgent: true
 # - Volumes that don't support CSI snapshots
 # - Data mover functionality (uploads CSI snapshots to S3)
 nodeAgent:
-  # Deploy as DaemonSet on all nodes
   podVolumePath: /var/lib/kubelet/pods
-  privileged: true  # Required for accessing pod volumes
+  privileged: true
 
-  extraEnvVars:
-    - name: KOPIA_CACHE_DIRECTORY
-      value: /scratch/kopia-cache
-    - name: KOPIA_LOG_DIR
-      value: /scratch/kopia-logs
-
-  extraVolumeMounts:
-    - name: scratch
-      mountPath: /scratch
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: false
 
   resources:
     requests:
