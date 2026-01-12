@@ -5,7 +5,6 @@ namespace: velero
 
 resources:
   - velero-sealed-secrets.yaml
-  - volumesnapshotclass.yaml
   - backup-schedules.yaml
 
 labels:

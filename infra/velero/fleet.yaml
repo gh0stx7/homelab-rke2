@@ -3,6 +3,9 @@ defaultNamespace: velero
 # Velero - Kubernetes Backup and Disaster Recovery
 # Backs up cluster resources and PersistentVolumes to S3-compatible storage (Garage)
 
+# Note: Requires harvester-snapshot VolumeSnapshotClass to be labeled:
+# kubectl label volumesnapshotclass harvester-snapshot velero.io/csi-volumesnapshot-class=true
+
 helm:
   repo: https://vmware-tanzu.github.io/helm-charts
   chart: velero
