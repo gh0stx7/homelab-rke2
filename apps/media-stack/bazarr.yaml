@@ -23,6 +23,8 @@ spec:
   template:
     metadata:
       labels: { app: bazarr }
+      annotations:
+        backup.velero.io/backup-volumes-excludes: hot
     spec:
       affinity:
         podAffinity:

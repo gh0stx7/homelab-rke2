@@ -21,6 +21,8 @@ spec:
   template:
     metadata:
       labels: { app: sonarr }
+    annotations:
+      backup.velero.io/backup-volumes-excludes: hot
     spec:
       affinity:
         podAffinity:

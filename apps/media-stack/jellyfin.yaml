@@ -26,6 +26,8 @@ spec:
       labels:
         app: jellyfin
         exposure: external
+      annotations:
+        backup.velero.io/backup-volumes-excludes: hot
     spec:
       affinity:
         podAffinity:

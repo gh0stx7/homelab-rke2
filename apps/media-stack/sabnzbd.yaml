@@ -92,6 +92,8 @@ spec:
       labels:
         app: sabnzbd
         stack: media-anchor
+      annotations:
+        backup.velero.io/backup-volumes-excludes: hot
     spec:
       containers:
         - name: sabnzbd
