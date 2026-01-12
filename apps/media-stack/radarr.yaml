@@ -24,8 +24,8 @@ spec:
   template:
     metadata:
       labels: { app: radarr }
-    annotations:
-      backup.velero.io/backup-volumes-excludes: hot
+      annotations:
+        backup.velero.io/backup-volumes-excludes: hot
     spec:
       affinity:
         podAffinity:
