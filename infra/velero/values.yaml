@@ -96,8 +96,10 @@ nodeAgent:
   privileged: true  # Required for accessing pod volumes
 
   extraEnvVars:
-    KOPIA_CACHE_DIRECTORY: /scratch/kopia-cache
-    KOPIA_LOG_DIR: /scratch/kopia-logs
+    - name: KOPIA_CACHE_DIRECTORY
+      value: /scratch/kopia-cache
+    - name: KOPIA_LOG_DIR
+      value: /scratch/kopia-logs
 
   extraVolumeMounts:
     - name: scratch
