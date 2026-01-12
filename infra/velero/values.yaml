@@ -94,13 +94,6 @@ nodeAgent:
   podVolumePath: /var/lib/kubelet/pods
   privileged: true
 
-  containerSecurityContext:
-    allowPrivilegeEscalation: false
-    capabilities:
-      drop:
-        - ALL
-    readOnlyRootFilesystem: false
-
   resources:
     requests:
       cpu: 500m
@@ -161,13 +154,6 @@ podSecurityContext:
   runAsNonRoot: true
   runAsUser: 999
   fsGroup: 999
-
-containerSecurityContext:
-  allowPrivilegeEscalation: false
-  capabilities:
-    drop:
-      - ALL
-  readOnlyRootFilesystem: true
 
 # =============================================================================
 # CLEANUP
