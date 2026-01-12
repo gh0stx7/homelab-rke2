@@ -95,6 +95,14 @@ nodeAgent:
   podVolumePath: /var/lib/kubelet/pods
   privileged: true  # Required for accessing pod volumes
 
+  extraEnvVars:
+    KOPIA_CACHE_DIRECTORY: /scratch/kopia-cache
+    KOPIA_LOG_DIR: /scratch/kopia-logs
+
+  extraVolumeMounts:
+    - name: scratch
+      mountPath: /scratch
+
   resources:
     requests:
       cpu: 500m
