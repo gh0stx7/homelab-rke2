@@ -40,7 +40,7 @@ spec:
               topologyKey: "kubernetes.io/hostname"
       containers:
         - name: jellyfin
-          image: jellyfin/jellyfin:10.11.3
+          image: jellyfin/jellyfin:10.11.5
           env:
             - { name: JELLYFIN_PublishedServerUrl, value: "https://ghostlabz.net" }
           ports:
