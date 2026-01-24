@@ -12,12 +12,12 @@ volumeBindingMode: Immediate
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: harvester-default
+  name: media-hot-rwx-pvc
   namespace: media
 spec:
   accessModes:
     - ReadWriteMany
-  storageClassName: harvester
+  storageClassName: harvester-default
   resources:
     requests:
       storage: 250Gi
