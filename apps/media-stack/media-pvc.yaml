@@ -11,3 +11,4 @@ spec:
     requests:
       storage: 250Gi
   volumeName: media-hot-pv
+  volumeMode: Filesystem
