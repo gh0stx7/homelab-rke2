@@ -27,15 +27,6 @@ spec:
       annotations:
         backup.velero.io/backup-volumes-excludes: hot
     spec:
-      affinity:
-        podAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: stack
-                    operator: In
-                    values: [ "media-anchor" ]
-              topologyKey: "kubernetes.io/hostname"
       containers:
         - name: radarr
           image: lscr.io/linuxserver/radarr:latest
@@ -47,16 +38,41 @@ spec:
             - { containerPort: 7878, name: http }
           volumeMounts:
             - { name: config, mountPath: /config }
-            - { name: hot, mountPath: /media/hot }
-            - { name: cold, mountPath: /media/cold }
+#            - { name: hot, mountPath: /media/hot }
+#            - { name: cold, mountPath: /media/cold }
+            - { name: media, mountPath: /media, mountPropagation: HostToContainer }
           resources:
             requests:
               cpu: "500m"
               memory: "512Mi"
+        - name: mergerfs
+          image: hvalev/mergerfs:2.41.1
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - SYS_ADMIN
+          env:
+            # Optimized parameters for media servers with hot/cold tiering
+            - name: MERGERFS_PARAMS
+              value: "cache.files=auto-full,dropcacheonclose=true,category.create=lfs,minfreespace=25G,moveonenospc=true,use_ino,cache.statfs=60"
+          volumeMounts:
+            - { name: hot, mountPath: /disks/hot }
+            - { name: cold, mountPath: /disks/cold }
+            - { name: media, mountPath: /merged, mountPropagation: Bidirectional }
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
       volumes:
         - name: config
           persistentVolumeClaim: { claimName: radarr-config }
         - name: hot
-          persistentVolumeClaim: { claimName: media-hot-pvc }
+          persistentVolumeClaim: { claimName: media-hot-rwx-pvc }
         - name: cold
           persistentVolumeClaim: { claimName: media-nfs-pvc }
+        - name: media
+          emptyDir: {}
