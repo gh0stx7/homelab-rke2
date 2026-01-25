@@ -1,23 +1,12 @@
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: harvester-default
-provisioner: driver.harvesterhci.io
-parameters:
-  hostStorageClass: longhorn
-allowVolumeExpansion: true
-reclaimPolicy: Retain
-volumeBindingMode: Immediate
----
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: media-hot-rwx-pvc
+  name: media-hot-rwx
   namespace: media
 spec:
   accessModes:
     - ReadWriteMany
-  storageClassName: harvester-default
+  storageClassName: harvester-rwx
   resources:
     requests:
       storage: 250Gi
