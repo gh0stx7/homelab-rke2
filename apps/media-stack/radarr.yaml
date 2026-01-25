@@ -71,7 +71,7 @@ spec:
         - name: config
           persistentVolumeClaim: { claimName: radarr-config }
         - name: hot
-          persistentVolumeClaim: { claimName: media-hot-rwx-pvc }
+          persistentVolumeClaim: { claimName: media-hot-rwx }
         - name: cold
           persistentVolumeClaim: { claimName: media-nfs-pvc }
         - name: media
