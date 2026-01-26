@@ -78,7 +78,7 @@ spec:
 #              cpu: "500m"
       volumes:
         - name: config
-          persistentVolumeClaim: { claimName: sonarr-config }
+          persistentVolumeClaim: { claimName: radarr-config }
         - name: hot
           persistentVolumeClaim: { claimName: media-hot-pvc }
         - name: cold
